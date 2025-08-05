@@ -176,3 +176,119 @@
     0 0 15px rgba(59, 130, 246, 0.4),
     0 0 20px rgba(59, 130, 246, 0.2);
 }
+
+/* FORCE SMALLER JARVIS CHATBOT - NUCLEAR OPTION */
+.jarvis-chatbot {
+  width: 320px !important;
+  height: 450px !important;
+  max-width: 320px !important;
+  max-height: 450px !important;
+}
+
+.device-tablet .jarvis-chatbot {
+  width: 280px !important;
+  height: 380px !important;
+}
+
+.device-mobile .jarvis-chatbot {
+  width: 260px !important;
+  height: 320px !important;
+}
+
+
+/* Smaller JARVIS Chatbot Styles */
+.jarvis-chatbot {
+  width: 320px !important;
+  height: 450px !important;
+  max-width: 320px !important;
+  max-height: 450px !important;
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%) !important;
+  border: 2px solid #00d4ff !important;
+  border-radius: 15px !important;
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.3) !important;
+  z-index: 1000 !important;
+}
+
+/* Tablet size */
+@media (max-width: 1024px) {
+  .jarvis-chatbot {
+    width: 280px !important;
+    height: 380px !important;
+  }
+}
+
+/* Mobile size */
+@media (max-width: 768px) {
+  .jarvis-chatbot {
+    width: 260px !important;
+    height: 320px !important;
+  }
+}
+
+/* Make video container smaller too */
+.jarvis-video-container {
+  height: 100px !important;
+}
+
+@media (max-width: 1024px) {
+  .jarvis-video-container {
+    height: 80px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .jarvis-video-container {
+    height: 60px !important;
+  }
+}
+/* Smaller JARVIS Chatbot Styles */
+.jarvis-chatbot {
+  width: 320px !important;
+  height: 450px !important;
+  max-width: 320px !important;
+  max-height: 450px !important;
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%) !important;
+  border: 2px solid #00d4ff !important;
+  border-radius: 15px !important;
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.3) !important;
+  z-index: 1000 !important;
+}
+
+/* Tablet size */
+@media (max-width: 1024px) {
+  .jarvis-chatbot {
+    width: 280px !important;
+    height: 380px !important;
+  }
+}
+
+/* Mobile size */
+@media (max-width: 768px) {
+  .jarvis-chatbot {
+    width: 260px !important;
+    height: 320px !important;
+  }
+}
+
+/* Make video container smaller too */
+.jarvis-video-container {
+  height: 100px !important;
+}
+
+@media (max-width: 1024px) {
+  .jarvis-video-container {
+    height: 80px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .jarvis-video-container {
+    height: 60px !important;
+  }
+}

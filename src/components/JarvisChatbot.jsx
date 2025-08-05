@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff, Send, Volume2, VolumeX, Play } from 'lucide-react';
-import chatbotVideo from '../assets/chatbot-video.mp4';
+import chatbotVideo from '../assets/chatbot-video.mp4'; 
 import { jarvisService } from '../services/jarvisService';
 import { voiceService } from '../services/voiceService';
 
@@ -354,4 +354,5 @@ const JarvisChatbot = () => {
 };
 
 export default JarvisChatbot;
+
 
