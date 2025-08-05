@@ -1,44 +1,28 @@
 import { useState, useEffect } from 'react';
 
+const DEVICE_TYPES = ['desktop', 'tablet', 'mobile'];
+
 export const useDeviceToggle = () => {
-  const [isMobilePreview, setIsMobilePreview] = useState(() => {
-    // Get initial state from localStorage
-    const saved = localStorage.getItem('jarvis-device-preview');
-    return saved ? JSON.parse(saved) : false;
-  });
-
-  const [actualDevice, setActualDevice] = useState(() => {
-    return window.innerWidth < 768;
+  const [device, setDevice] = useState(() => {
+    return localStorage.getItem('jarvis-device') || 'desktop';
   });
 
   useEffect(() => {
-    // Save to localStorage whenever it changes
-    localStorage.setItem('jarvis-device-preview', JSON.stringify(isMobilePreview));
-  }, [isMobilePreview]);
+    localStorage.setItem('jarvis-device', device);
+  }, [device]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setActualDevice(window.innerWidth < 768);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const toggleDevicePreview = () => {
-    setIsMobilePreview(prev => !prev);
+  const setDeviceType = (type) => {
+    if (DEVICE_TYPES.includes(type)) {
+      setDevice(type);
+    }
   };
 
-  // In development mode, use the toggle state
-  // In production, always use actual device detection
+  // For development only: allow toggling
   const isDevelopment = import.meta.env.DEV;
-  const effectiveDevice = isDevelopment ? isMobilePreview : actualDevice;
 
   return {
-    isMobilePreview,
-    actualDevice,
-    effectiveDevice,
-    toggleDevicePreview,
+    device, // 'desktop' | 'tablet' | 'mobile'
+    setDeviceType,
     isDevelopment
   };
 }; 
