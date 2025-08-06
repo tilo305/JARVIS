@@ -226,35 +226,6 @@ const JarvisChatbot = () => {
 
           {/* Controls */}
           <div className="flex space-x-2">
-            {/* TEST BUTTON - Character Selection */}
-            <button
-              onClick={() => setShowCharacterSelect(!showCharacterSelect)}
-              className="p-2 rounded-full bg-blue-600 hover:bg-blue-700 transition-all duration-300"
-              title="Switch AI Character"
-            >
-              <Users className="w-4 h-4 text-white" />
-            </button>
-
-            {/* Voice Sample Button */}
-            <button
-              onClick={playJarvisVoiceSample}
-              className="p-2 rounded-full bg-purple-600 hover:bg-purple-700 transition-all duration-300"
-              title="Play Voice Sample"
-            >
-              <Play className="w-4 h-4 text-white" />
-            </button>
-
-            {/* Speech Toggle */}
-            <button
-              onClick={toggleSpeaking}
-              className={`p-2 rounded-full transition-all duration-300 ${
-                voiceEnabled ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-700'
-              }`}
-              title={voiceEnabled ? 'Voice Output Enabled' : 'Voice Output Disabled'}
-            >
-              {voiceEnabled ? <Volume2 className="w-4 h-4 text-white" /> : <VolumeX className="w-4 h-4 text-white" />}
-            </button>
-
             {/* Voice Input */}
             <button
               onClick={toggleListening}
