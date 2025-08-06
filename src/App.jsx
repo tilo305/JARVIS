@@ -1,8 +1,8 @@
 import Hero from './components/Hero'
-import JarvisChatbot from './components/JarvisChatbot'
-import HUDElements from './components/HUDElements'
-import ContentSection from './components/ContentSection'
-import DeviceToggle from './components/DeviceToggle'
+import JarvisChatbot from './components/JarvisChatbot'   
+import HUDElements from './components/HUDElements'       
+import ContentSection from './components/ContentSection' 
+import DeviceToggle from './components/DeviceToggle'     
 import { useDeviceToggle } from './hooks/useDeviceToggle'
 import './App.css'
 
@@ -24,9 +24,9 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-black relative">
+    <div className="min-h-screen bg-black relative">     
       <DeviceToggle />
-      <div className={deviceClass} style={deviceStyle}>
+      <div className={deviceClass} style={deviceStyle}>  
         <Hero />
         <ContentSection />
         <HUDElements />

@@ -1,159 +1,147 @@
 import { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Send, Volume2, VolumeX, Play } from 'lucide-react';
-import chatbotVideo from '../assets/chatbot-video.mp4'; 
+import { Mic, MicOff, Send, Volume2, VolumeX, Play, Users } from 'lucide-react';
+import chatbotVideo from '../assets/chatbot-video.mp4';
 import { jarvisService } from '../services/jarvisService';
-import { voiceService } from '../services/voiceService';
 
 const JarvisChatbot = () => {
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [messages, setMessages] = useState([
-    { id: 1, text: "Good day, sir. JARVIS at your service. How may I assist you today?", sender: 'jarvis', timestamp: new Date() }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [selectedCharacter, setSelectedCharacter] = useState('jarvis');
+  const [showCharacterSelect, setShowCharacterSelect] = useState(false);
   const videoRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.play().catch(console.error);
+  // Character configurations
+  const characters = {
+    jarvis: {
+      name: 'JARVIS',
+      greeting: "Good day, sir. JARVIS at your service. How may I assist you today?",
+      color: 'blue',
+      gradient: 'from-blue-500 to-cyan-500',
+      borderColor: 'border-blue-500'
+    },
+    friday: {
+      name: 'FRIDAY',
+      greeting: "Hey there! FRIDAY here, ready to help out. What can I do for you?",
+      color: 'purple',
+      gradient: 'from-purple-500 to-pink-500',
+      borderColor: 'border-purple-500'
+    },
+    edith: {
+      name: 'EDITH',
+      greeting: "EDITH systems online. Advanced threat detection active. How may I assist?",
+      color: 'red',
+      gradient: 'from-red-500 to-orange-500',
+      borderColor: 'border-red-500'
+    },
+    karen: {
+      name: 'KAREN',
+      greeting: "KAREN network interface ready. All systems operational. What do you need?",
+      color: 'green',
+      gradient: 'from-green-500 to-emerald-500',
+      borderColor: 'border-green-500'
     }
-    
-    // Initialize JARVIS service and load chat history
-    initializeChatHistory();
-    
-    // Check voice support
-    const voiceSupport = voiceService.isVoiceSupported();
-    console.log('Voice support:', voiceSupport);
-  }, []);
+  };
 
+  const currentCharacter = characters[selectedCharacter];
+
+  // Initialize with greeting
   useEffect(() => {
-    scrollToBottom();
+    const initialMessage = {
+      id: Date.now(),
+      text: currentCharacter.greeting,
+      sender: 'ai',
+      timestamp: new Date()
+    };
+    setMessages([initialMessage]);
+  }, [selectedCharacter]);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const initializeChatHistory = async () => {
-    try {
-      const history = await jarvisService.getChatHistory(20);
-      if (history.length > 0) {
-        const formattedHistory = history.map(msg => ({
-          id: msg.id,
-          text: msg.message,
-          sender: msg.sender,
-          timestamp: new Date(msg.timestamp)
-        }));
-        setMessages(prev => [...prev, ...formattedHistory]);
-      }
-    } catch (error) {
-      console.error('Failed to load chat history:', error);
-    }
+  const handleCharacterChange = (characterKey) => {
+    setSelectedCharacter(characterKey);
+    setShowCharacterSelect(false);
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const toggleListening = async () => {
-    if (isListening) {
-      // Stop listening
-      voiceService.stopListening();
-      setIsListening(false);
-    } else {
-      // Start listening
-      setIsListening(true);
-      try {
-        const result = await voiceService.startListening();
-        setIsListening(false);
-        
-        if (result.transcript) {
-          handleUserMessage(result.transcript, 'voice');
-        }
-      } catch (error) {
-        console.error('Voice recognition error:', error);
-        setIsListening(false);
-        
-        // Show error message
-        const errorMessage = {
-          id: Date.now(),
-          text: "I'm having trouble hearing you, sir. Perhaps we could try text instead?",
-          sender: 'jarvis',
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, errorMessage]);
-      }
+  const playJarvisVoiceSample = () => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(
+        "Voice sample activated. All systems operational, sir."
+      );
+      utterance.rate = 0.9;
+      utterance.pitch = 0.8;
+      speechSynthesis.speak(utterance);
     }
   };
 
   const toggleSpeaking = () => {
-    if (isSpeaking) {
-      voiceService.stopSpeaking();
+    setVoiceEnabled(!voiceEnabled);
+    if (voiceEnabled && isSpeaking) {
+      speechSynthesis.cancel();
       setIsSpeaking(false);
+    }
+  };
+
+  const toggleListening = () => {
+    if (!('webkitSpeechRecognition' in window)) {
+      alert('Speech recognition not supported in this browser');
+      return;
+    }
+
+    if (isListening) {
+      setIsListening(false);
     } else {
-      setVoiceEnabled(!voiceEnabled);
+      setIsListening(true);
+      // Add speech recognition logic here
     }
   };
 
-  const playJarvisVoiceSample = () => {
-    const played = voiceService.playJarvisVoiceSample();
-    if (!played) {
-      console.log('JARVIS voice sample not available');
-    }
-  };
+  const sendMessage = async () => {
+    if (!inputMessage.trim() || isProcessing) return;
 
-  const sendMessage = () => {
-    if (inputMessage.trim()) {
-      handleUserMessage(inputMessage.trim());
-      setInputMessage('');
-    }
-  };
-
-  const handleUserMessage = async (messageText, messageType = 'text') => {
-    // Add user message to UI immediately
     const userMessage = {
       id: Date.now(),
-      text: messageText,
+      text: inputMessage,
       sender: 'user',
       timestamp: new Date()
     };
+
     setMessages(prev => [...prev, userMessage]);
-    
-    // Show processing state
+    setInputMessage('');
     setIsProcessing(true);
-    
+
     try {
-      // Process message through JARVIS service
-      const jarvisResponse = await jarvisService.processMessage(messageText, messageType);
+      const response = await jarvisService.sendMessage(inputMessage, selectedCharacter);
       
-      // Add JARVIS response to UI
-      const jarvisMessage = {
+      const aiMessage = {
         id: Date.now() + 1,
-        text: jarvisResponse,
-        sender: 'jarvis',
+        text: response,
+        sender: 'ai',
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, jarvisMessage]);
       
-      // Speak the response if voice is enabled
-      if (voiceEnabled && jarvisResponse) {
+      setMessages(prev => [...prev, aiMessage]);
+
+      if (voiceEnabled && 'speechSynthesis' in window) {
         setIsSpeaking(true);
-        try {
-          await voiceService.speakAsJarvis(jarvisResponse);
-        } catch (error) {
-          console.error('Speech synthesis error:', error);
-        } finally {
-          setIsSpeaking(false);
-        }
+        const utterance = new SpeechSynthesisUtterance(response);
+        utterance.rate = 0.9;
+        utterance.pitch = 0.8;
+        utterance.onend = () => setIsSpeaking(false);
+        speechSynthesis.speak(utterance);
       }
-      
     } catch (error) {
-      console.error('Error processing message:', error);
-      
-      // Add error response
       const errorMessage = {
         id: Date.now() + 1,
         text: "I apologize, sir, but I seem to be experiencing a minor technical difficulty. Perhaps we could try that again?",
-        sender: 'jarvis',
+        sender: 'ai',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -170,21 +158,49 @@ const JarvisChatbot = () => {
   };
 
   const formatTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
   return (
     <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 w-[600px] h-[400px]">
-      {/* Main Chat Interface - Always Open */}
-      <div className="glass rounded-2xl border border-blue-500/30 shadow-2xl h-full flex flex-col">
+      {/* Character Selection Dropdown */}
+      {showCharacterSelect && (
+        <div className="absolute -top-48 left-0 right-0 bg-black/90 backdrop-blur-sm rounded-xl border border-gray-700 p-4 z-50">
+          <h3 className="text-white font-semibold mb-3">Select AI Assistant</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {Object.entries(characters).map(([key, char]) => (
+              <button
+                key={key}
+                onClick={() => handleCharacterChange(key)}
+                className={`p-3 rounded-lg border-2 transition-all duration-300 ${
+                  selectedCharacter === key
+                    ? `bg-gradient-to-r ${char.gradient} ${char.borderColor} text-white`
+                    : `bg-gray-800/50 border-gray-600 text-gray-300 hover:${char.borderColor} hover:text-white`
+                }`}
+              >
+                <div className="font-semibold">{char.name}</div>
+                <div className="text-xs opacity-75 mt-1">
+                  {key === 'jarvis' && 'Original AI Assistant'}
+                  {key === 'friday' && 'Friendly & Casual'}
+                  {key === 'edith' && 'Advanced Defense'}
+                  {key === 'karen' && 'Network Specialist'}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Main Chat Interface */}
+      <div className={`glass rounded-2xl border ${currentCharacter.borderColor} shadow-2xl h-full flex flex-col`}>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-blue-500/20">
+        <div className={`flex items-center justify-between p-4 border-b ${currentCharacter.borderColor}`}>
           <div className="flex items-center space-x-3">
-            {/* JARVIS Avatar with Video */}
-            <div className="relative w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center overflow-hidden">
+            {/* AI Avatar */}
+            <div className={`relative w-12 h-12 rounded-full bg-gradient-to-r ${currentCharacter.gradient} flex items-center justify-center overflow-hidden`}>
               <video
                 ref={videoRef}
                 autoPlay
@@ -195,65 +211,30 @@ const JarvisChatbot = () => {
               >
                 <source src={chatbotVideo} type="video/mp4" />
               </video>
-              <div className="absolute inset-0 bg-blue-500/20 rounded-full"></div>
+              <div className={`absolute inset-0 bg-${currentCharacter.color}-500/20 rounded-full`}></div>
             </div>
             <div>
-              <h3 className="text-white font-semibold text-lg">JARVIS</h3>
-              <p className="text-blue-400 text-sm">
-                {isProcessing ? 'Processing...' : 
-                 isSpeaking ? 'Speaking...' : 
-                 isListening ? 'Listening...' : 
+              <h3 className="text-white font-semibold text-lg">{currentCharacter.name}</h3>
+              <p className={`text-${currentCharacter.color}-400 text-sm`}>
+                {isProcessing ? 'Processing...' :
+                 isSpeaking ? 'Speaking...' :
+                 isListening ? 'Listening...' :
                  'AI Assistant'}
               </p>
             </div>
           </div>
-          
-          {/* Voice Controls */}
+
+          {/* Controls */}
           <div className="flex space-x-2">
-            {/* Voice Sample Button */}
-            <button
-              onClick={playJarvisVoiceSample}
-              className="p-2 rounded-full bg-purple-600 hover:bg-purple-700 transition-all duration-300"
-              title="Play JARVIS Voice Sample"
-            >
-              <Play className="w-4 h-4 text-white" />
-            </button>
-            
-            {/* Speech Output Toggle */}
-            <button
-              onClick={toggleSpeaking}
-              className={`p-2 rounded-full transition-all duration-300 ${
-                voiceEnabled 
-                  ? isSpeaking
-                    ? 'bg-green-500 hover:bg-green-600 animate-pulse'
-                    : 'bg-green-600 hover:bg-green-700'
-                  : 'bg-gray-600 hover:bg-gray-700'
-              }`}
-              title={voiceEnabled ? 'Voice Output Enabled' : 'Voice Output Disabled'}
-            >
-              {voiceEnabled ? (
-                <Volume2 className="w-4 h-4 text-white" />
-              ) : (
-                <VolumeX className="w-4 h-4 text-white" />
-              )}
-            </button>
-            
-            {/* Voice Input Button */}
+            {/* Voice Input */}
             <button
               onClick={toggleListening}
-              disabled={isProcessing}
               className={`p-2 rounded-full transition-all duration-300 ${
-                isListening 
-                  ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
-                  : 'bg-blue-500 hover:bg-blue-600'
-              } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                isListening ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
+              }`}
               title={isListening ? 'Stop Listening' : 'Start Voice Input'}
             >
-              {isListening ? (
-                <MicOff className="w-4 h-4 text-white" />
-              ) : (
-                <Mic className="w-4 h-4 text-white" />
-              )}
+              {isListening ? <MicOff className="w-4 h-4 text-white" /> : <Mic className="w-4 h-4 text-white" />}
             </button>
           </div>
         </div>
@@ -261,35 +242,27 @@ const JarvisChatbot = () => {
         {/* Messages */}
         <div className="flex-1 p-4 space-y-4 overflow-y-auto max-h-64">
           {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+            <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className="max-w-md">
-                <div
-                  className={`px-4 py-3 rounded-lg text-sm leading-relaxed ${
-                    message.sender === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-800/80 text-gray-300 border border-blue-500/20'
-                  }`}
-                >
+                <div className={`px-4 py-3 rounded-lg text-sm leading-relaxed ${
+                  message.sender === 'user'
+                    ? 'bg-blue-600 text-white'
+                    : `bg-gray-800/80 text-gray-300 border ${currentCharacter.borderColor}`
+                }`}>
                   {message.text}
                 </div>
                 {message.timestamp && (
-                  <div className={`text-xs text-gray-500 mt-1 ${
-                    message.sender === 'user' ? 'text-right' : 'text-left'
-                  }`}>
+                  <div className={`text-xs text-gray-500 mt-1 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
                     {formatTime(message.timestamp)}
                   </div>
                 )}
               </div>
             </div>
           ))}
-          
-          {/* Processing indicator */}
+
           {isProcessing && (
             <div className="flex justify-start">
-              <div className="bg-gray-800/80 border border-blue-500/20 px-4 py-3 rounded-lg">
+              <div className={`bg-gray-800/80 border ${currentCharacter.borderColor} px-4 py-3 rounded-lg`}>
                 <div className="flex space-x-1">
                   <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
@@ -298,28 +271,26 @@ const JarvisChatbot = () => {
               </div>
             </div>
           )}
-          
+
           <div ref={messagesEndRef} />
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-blue-500/20">
+        <div className={`p-4 border-t ${currentCharacter.borderColor}`}>
           <div className="flex space-x-3">
             <input
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Speak with JARVIS..."
+              placeholder={`Speak with ${currentCharacter.name}...`}
               disabled={isProcessing}
-              className={`flex-1 px-4 py-3 bg-gray-800/50 border border-blue-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm ${
-                isProcessing ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className={`flex-1 px-4 py-3 bg-gray-800/50 border ${currentCharacter.borderColor} rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm`}
             />
             <button
               onClick={sendMessage}
               disabled={isProcessing || !inputMessage.trim()}
-              className={`px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 flex items-center justify-center min-w-[50px] ${
+              className={`px-4 py-3 bg-gradient-to-r ${currentCharacter.gradient} text-white rounded-lg hover:opacity-80 transition-all duration-300 flex items-center justify-center min-w-[50px] ${
                 (isProcessing || !inputMessage.trim()) ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
@@ -331,22 +302,20 @@ const JarvisChatbot = () => {
 
       {/* Status Indicator */}
       <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
-        <div className="bg-black/80 px-4 py-1 rounded-full border border-blue-500/30 flex items-center space-x-2">
+        <div className={`bg-black/80 px-4 py-1 rounded-full border ${currentCharacter.borderColor} flex items-center space-x-2`}>
           <div className={`w-2 h-2 rounded-full ${
             isProcessing ? 'bg-yellow-400 animate-pulse' :
-            isListening ? 'bg-red-400 animate-pulse' : 
-            isSpeaking ? 'bg-green-400 animate-pulse' : 
-            'bg-blue-400'
+            isListening ? 'bg-red-400 animate-pulse' :
+            isSpeaking ? 'bg-green-400 animate-pulse' :
+            `bg-${currentCharacter.color}-400`
           }`}></div>
-          <span className="text-blue-400 text-xs font-semibold">
+          <span className={`text-${currentCharacter.color}-400 text-xs font-semibold`}>
             {isProcessing ? 'PROCESSING' :
-             isListening ? 'LISTENING' : 
-             isSpeaking ? 'SPEAKING' : 
+             isListening ? 'LISTENING' :
+             isSpeaking ? 'SPEAKING' :
              'ONLINE'}
           </span>
-          {voiceEnabled && (
-            <span className="text-green-400 text-xs">🔊</span>
-          )}
+          {voiceEnabled && <span className="text-green-400 text-xs">🔊</span>}
         </div>
       </div>
     </div>
@@ -354,5 +323,3 @@ const JarvisChatbot = () => {
 };
 
 export default JarvisChatbot;
-
-

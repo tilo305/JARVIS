@@ -292,3 +292,114 @@
     height: 60px !important;
   }
 }
+
+/* ===== HIDE CONTENT ONLY BEHIND CHATBOT ===== */
+.chatbot-content-mask {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+  height: 450px;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 998; /* Just below chatbot */
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+  pointer-events: none; /* Allow clicks to pass through */
+}
+
+/* Responsive mask sizes */
+@media (max-width: 768px) {
+  .chatbot-content-mask {
+    width: 280px;
+    height: 380px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chatbot-content-mask {
+    width: 260px;
+    height: 320px;
+    bottom: 10px;
+    right: 10px;
+  }
+}
+
+/* Ensure chatbot stays above the mask */
+.jarvis-chatbot {
+  z-index: 999 !important;
+}
+
+
+/* ===== HIDE CONTENT ONLY BEHIND CHATBOT ===== */
+.chatbot-content-mask {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+  height: 450px;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 998; /* Just below chatbot */
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+  pointer-events: none; /* Allow clicks to pass through */
+}
+
+/* Responsive mask sizes */
+@media (max-width: 768px) {
+  .chatbot-content-mask {
+    width: 280px;
+    height: 380px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chatbot-content-mask {
+    width: 260px;
+    height: 320px;
+    bottom: 10px;
+    right: 10px;
+  }
+}
+
+/* Ensure chatbot stays above the mask */
+.jarvis-chatbot {
+  z-index: 999 !important;
+}
+
+
+/* ===== HIDE CONTENT ONLY BEHIND CHATBOT ===== */
+.chatbot-content-mask {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+  height: 450px;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 998; /* Just below chatbot */
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+  pointer-events: none; /* Allow clicks to pass through */
+}
+
+/* Responsive mask sizes */
+@media (max-width: 768px) {
+  .chatbot-content-mask {
+    width: 280px;
+    height: 380px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chatbot-content-mask {
+    width: 260px;
+    height: 320px;
+    bottom: 10px;
+    right: 10px;
+  }
+}
+
+/* Ensure chatbot stays above the mask */
+.jarvis-chatbot {
+  z-index: 999 !important;
+}
+
