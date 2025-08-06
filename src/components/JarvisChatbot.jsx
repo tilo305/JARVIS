@@ -165,7 +165,7 @@ const JarvisChatbot = () => {
   };
 
   return (
-    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 w-[600px] h-[400px]">
+    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 w-[450px] h-[320px]">
       {/* Character Selection Dropdown */}
       {showCharacterSelect && (
         <div className="absolute -top-48 left-0 right-0 bg-black/90 backdrop-blur-sm rounded-xl border border-gray-700 p-4 z-50">
@@ -269,10 +269,10 @@ const JarvisChatbot = () => {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 p-4 space-y-4 overflow-y-auto max-h-64">
+        <div className="flex-1 p-3 space-y-3 overflow-y-auto max-h-44">
           {messages.map((message) => (
             <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className="max-w-md">
+              <div className="max-w-xs">
                 <div className={`px-4 py-3 rounded-lg text-sm leading-relaxed ${
                   message.sender === 'user'
                     ? 'bg-blue-600 text-white'
