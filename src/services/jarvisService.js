@@ -1,4 +1,5 @@
 import { supabase, supabaseHelpers } from '../lib/supabase';
+import { enhancedAI } from './enhancedAIService';
 
 // JARVIS Service - Handles all JARVIS-related backend operations
 export class JarvisService {
@@ -263,6 +264,50 @@ export class JarvisService {
       console.error('Error synthesizing speech:', error);
       return null;
     }
+  }
+
+  // Enhanced message processing using the new AI service
+  async sendMessage(userMessage, character = 'jarvis') {
+    try {
+      // Save user message to database
+      await this.saveChatMessage(userMessage, 'user', 'text');
+      
+      // Get enhanced AI response
+      const aiResponse = await enhancedAI.sendMessage(
+        userMessage, 
+        character, 
+        this.currentUser?.id || this.sessionId
+      );
+      
+      // Save AI response to database
+      await this.saveChatMessage(aiResponse, character, 'text');
+      
+      // Log the interaction
+      await this.logSystemEvent('enhanced_chat_interaction', {
+        user_message: userMessage,
+        ai_response: aiResponse,
+        character: character,
+        enhanced_ai: true
+      });
+      
+      return aiResponse;
+    } catch (error) {
+      console.error('Error in enhanced sendMessage:', error);
+      // Fallback to original method
+      return this.processMessage(userMessage, 'text');
+    }
+  }
+
+  // Get conversation statistics
+  getConversationStats() {
+    const userId = this.currentUser?.id || this.sessionId;
+    return enhancedAI.getStats(userId);
+  }
+
+  // Clear conversation context
+  clearConversationContext() {
+    const userId = this.currentUser?.id || this.sessionId;
+    enhancedAI.clearContext(userId);
   }
 
   // Update user session on page unload
