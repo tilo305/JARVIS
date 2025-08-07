@@ -8,6 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3000;
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://n8n.hempstarai.com/webhook/n8n';
 
 // MIME types for different file extensions
 const mimeTypes = {
@@ -33,7 +34,7 @@ const server = createServer(async (req, res) => {
 
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   // Handle preflight requests
@@ -52,6 +53,55 @@ const server = createServer(async (req, res) => {
       environment: process.env.NODE_ENV || 'development'
     }));
     return;
+  }
+
+  // n8n webhook proxy: forwards any method and body to external webhook
+  if (req.url.startsWith('/api/webhook/n8n')) {
+    try {
+      // Build target URL preserving query string
+      const incomingUrl = new URL(req.url, `http://localhost:${PORT}`);
+      const targetUrl = new URL(N8N_WEBHOOK_URL);
+      // Append incoming query params to target
+      incomingUrl.searchParams.forEach((value, key) => {
+        targetUrl.searchParams.append(key, value);
+      });
+
+      // Read request body (if any)
+      const chunks = [];
+      await new Promise((resolve) => {
+        req.on('data', (chunk) => chunks.push(chunk));
+        req.on('end', resolve);
+      });
+      const bodyBuffer = Buffer.concat(chunks);
+      const hasBody = bodyBuffer.length > 0 && !['GET', 'HEAD'].includes(req.method);
+
+      // Prepare headers: forward content-type and auth, drop host/content-length to let fetch set them
+      const forwardHeaders = {};
+      const keepHeader = (name) => ['content-type', 'authorization', 'x-api-key'].includes(name.toLowerCase());
+      for (const [name, value] of Object.entries(req.headers)) {
+        if (keepHeader(name)) forwardHeaders[name] = value;
+      }
+
+      const response = await fetch(targetUrl.toString(), {
+        method: req.method,
+        headers: forwardHeaders,
+        body: hasBody ? bodyBuffer : undefined
+      });
+
+      // Relay response
+      const respContentType = response.headers.get('content-type') || 'application/json';
+      const respStatus = response.status;
+      const respBody = await response.arrayBuffer();
+
+      res.writeHead(respStatus, { 'Content-Type': respContentType });
+      res.end(Buffer.from(respBody));
+      return;
+    } catch (error) {
+      console.error('n8n webhook proxy error:', error);
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Failed to reach n8n webhook', details: error.message }));
+      return;
+    }
   }
 
   let filePath = '';
@@ -106,6 +156,7 @@ server.listen(PORT, () => {
   console.log(`1. Build your React app: npm run build`);
   console.log(`2. Your app will be available at: http://localhost:${PORT}`);
   console.log(`3. API health check: http://localhost:${PORT}/api/health`);
+  console.log(`4. n8n webhook proxy: POST http://localhost:${PORT}/api/webhook/n8n`);
 });
 
 // Graceful shutdown

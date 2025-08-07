@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://n8n.hempstarai.com/webhook/n8n';
 
 // Security middleware
 app.use(helmet({
@@ -29,13 +30,55 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files from the dist directory (built React app)
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// API routes (for future expansion)
+// API routes
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
   });
+});
+
+// n8n webhook proxy
+app.all('/api/webhook/n8n', async (req, res) => {
+  try {
+    const targetUrl = new URL(N8N_WEBHOOK_URL);
+    // Forward query params
+    for (const [key, value] of Object.entries(req.query)) {
+      targetUrl.searchParams.append(key, value);
+    }
+
+    // Build headers
+    const headers = {};
+    const keepHeader = (name) => ['content-type', 'authorization', 'x-api-key'].includes(name.toLowerCase());
+    for (const [name, value] of Object.entries(req.headers)) {
+      if (keepHeader(name)) headers[name] = value;
+    }
+
+    // Choose body depending on content-type
+    let body;
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      if (headers['content-type'] && headers['content-type'].includes('application/json')) {
+        body = JSON.stringify(req.body);
+      } else {
+        // For non-JSON, rely on raw body via text
+        body = typeof req.body === 'string' ? req.body : undefined;
+      }
+    }
+
+    const resp = await fetch(targetUrl.toString(), {
+      method: req.method,
+      headers,
+      body,
+    });
+
+    const contentType = resp.headers.get('content-type') || 'application/json';
+    const buffer = Buffer.from(await resp.arrayBuffer());
+    res.status(resp.status).set('Content-Type', contentType).send(buffer);
+  } catch (err) {
+    console.error('n8n webhook proxy error:', err);
+    res.status(502).json({ error: 'Failed to reach n8n webhook', details: err.message });
+  }
 });
 
 // Handle all other routes by serving the React app
@@ -63,6 +106,7 @@ app.listen(PORT, () => {
   console.log(`📁 Serving static files from: ${path.join(__dirname, 'dist')}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`⏰ Started at: ${new Date().toISOString()}`);
+  console.log(`🔗 n8n webhook proxy: ALL http://localhost:${PORT}/api/webhook/n8n -> ${N8N_WEBHOOK_URL}`);
 });
 
 // Graceful shutdown
