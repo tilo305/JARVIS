@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff, Send, Volume2, VolumeX, Play, Users } from 'lucide-react';
+import { Conversation } from '@elevenlabs/client';
 import chatbotVideo from '../assets/chatbot-video.mp4';
 import { jarvisService } from '../services/jarvisService';
 
@@ -16,6 +17,48 @@ const JarvisChatbot = () => {
   const messagesEndRef = useRef(null);
   const elevenWidgetRef = useRef(null);
   const [isElevenWidgetReady, setIsElevenWidgetReady] = useState(false);
+  const conversationRef = useRef(null);
+
+  // Try to programmatically trigger the ElevenLabs widget
+  const handleMicWidgetTrigger = async () => {
+    // Request mic first
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      alert(`Microphone permission error: ${err?.name || 'Unknown'}${err?.message ? ` - ${err.message}` : ''}`);
+      return;
+    }
+
+    // If already in a session, stop it
+    if (conversationRef.current) {
+      try { await conversationRef.current.endSession(); } catch {}
+      conversationRef.current = null;
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      setIsListening(true);
+      const conv = await Conversation.startSession({
+        agentId: 'agent_7601k23b460aeejb2pvyfcvw6atk',
+        onConnect: () => setIsListening(true),
+        onDisconnect: () => setIsListening(false),
+        onError: (error) => {
+          console.error('ElevenLabs conversation error', error);
+          alert(`Voice error: ${error?.message || 'Unknown error'}`);
+          setIsListening(false);
+        },
+        onModeChange: (mode) => {
+          if (mode?.mode === 'speaking') setIsSpeaking(true); else setIsSpeaking(false);
+        },
+      });
+      conversationRef.current = conv;
+    } catch (e) {
+      console.error(e);
+      alert(`Failed to start voice session: ${e?.message || 'Unknown error'}`);
+      setIsListening(false);
+    }
+  };
 
   // Character configurations
   const characters = {
@@ -260,22 +303,17 @@ const JarvisChatbot = () => {
 
           {/* Controls */}
           <div className="flex space-x-2 items-center">
-            {isElevenWidgetReady ? (
-              <div className="w-10 h-10 flex items-center justify-center">
-                <elevenlabs-convai
-                  ref={elevenWidgetRef}
-                  agent-id="agent_7601k23b460aeejb2pvyfcvw6atk"
-                ></elevenlabs-convai>
-              </div>
-            ) : (
-              <button
-                onClick={() => alert('Loading voice widget... try again in a moment')}
-                className="p-2 rounded-full bg-blue-500 hover:bg-blue-600 transition-all duration-300"
-                title="Loading voice widget"
-              >
-                <Mic className="w-4 h-4 text-white" />
-              </button>
-            )}
+            <button
+              type="button"
+              className={`p-2 rounded-full transition-all duration-300 ${
+                isElevenWidgetReady ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-600 cursor-not-allowed'
+              }`}
+              aria-label="Voice (ElevenLabs)"
+              title={isElevenWidgetReady ? 'Start voice' : 'Loading voice widget...'}
+              onClick={handleMicWidgetTrigger}
+            >
+              <Mic className="w-4 h-4 text-white" />
+            </button>
           </div>
         </div>
 
@@ -339,6 +377,8 @@ const JarvisChatbot = () => {
           </div>
         </div>
       </div>
+
+      {/* ElevenLabs widget not required when using SDK; keeping code minimal */}
 
       {/* Status Indicator */}
       <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
