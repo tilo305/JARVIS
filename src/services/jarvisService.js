@@ -213,6 +213,36 @@ export class JarvisService {
     }
   }
 
+  // New: Call backend (n8n) for message, with graceful fallback
+  async sendMessage(userMessage, character = 'jarvis') {
+    try {
+      const payload = { message: userMessage, character };
+      const response = await fetch('/api/n8n', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upstream error ${response.status}`);
+      }
+
+      const data = await response.json().catch(() => ({}));
+      const text = data?.text || data?.message || data?.reply || '';
+      if (typeof text === 'string' && text.trim().length > 0) {
+        // Save assistant message
+        await this.saveChatMessage(text, 'jarvis', 'text');
+        return text;
+      }
+
+      // Fallback to local generator if response not usable
+      return await this.processMessage(userMessage, 'text');
+    } catch (error) {
+      console.warn('Falling back to local Jarvis response due to API error:', error);
+      return await this.processMessage(userMessage, 'text');
+    }
+  }
+
   // Log system events
   async logSystemEvent(eventType, eventData) {
     try {
