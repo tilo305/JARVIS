@@ -14,6 +14,8 @@ const JarvisChatbot = () => {
   const [showCharacterSelect, setShowCharacterSelect] = useState(false);
   const videoRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const elevenWidgetRef = useRef(null);
+  const [isElevenWidgetReady, setIsElevenWidgetReady] = useState(false);
 
   // Character configurations
   const characters = {
@@ -64,6 +66,38 @@ const JarvisChatbot = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Load ElevenLabs ConvAI widget script once
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const existing = document.querySelector('script[src="https://unpkg.com/@elevenlabs/convai-widget-embed"]');
+    const checkReady = () => {
+      try {
+        if (window.customElements && window.customElements.get('elevenlabs-convai')) {
+          setIsElevenWidgetReady(true);
+          return true;
+        }
+      } catch (_) {}
+      return false;
+    };
+    if (existing) {
+      // If script already present, wait for custom element registration
+      if (!checkReady()) {
+        const id = setInterval(() => { if (checkReady()) clearInterval(id); }, 200);
+        return () => clearInterval(id);
+      }
+      return;
+    }
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
+    s.async = true;
+    s.type = 'text/javascript';
+    document.body.appendChild(s);
+    const id = setInterval(() => { if (checkReady()) clearInterval(id); }, 200);
+    return () => {
+      clearInterval(id);
+    };
+  }, []);
 
   const handleCharacterChange = (characterKey) => {
     setSelectedCharacter(characterKey);
@@ -225,17 +259,23 @@ const JarvisChatbot = () => {
           </div>
 
           {/* Controls */}
-          <div className="flex space-x-2">
-            {/* Voice Input */}
-            <button
-              onClick={toggleListening}
-              className={`p-2 rounded-full transition-all duration-300 ${
-                isListening ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
-              }`}
-              title={isListening ? 'Stop Listening' : 'Start Voice Input'}
-            >
-              {isListening ? <MicOff className="w-4 h-4 text-white" /> : <Mic className="w-4 h-4 text-white" />}
-            </button>
+          <div className="flex space-x-2 items-center">
+            {isElevenWidgetReady ? (
+              <div className="w-10 h-10 flex items-center justify-center">
+                <elevenlabs-convai
+                  ref={elevenWidgetRef}
+                  agent-id="agent_7601k23b460aeejb2pvyfcvw6atk"
+                ></elevenlabs-convai>
+              </div>
+            ) : (
+              <button
+                onClick={() => alert('Loading voice widget... try again in a moment')}
+                className="p-2 rounded-full bg-blue-500 hover:bg-blue-600 transition-all duration-300"
+                title="Loading voice widget"
+              >
+                <Mic className="w-4 h-4 text-white" />
+              </button>
+            )}
           </div>
         </div>
 

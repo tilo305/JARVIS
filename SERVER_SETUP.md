@@ -6,7 +6,7 @@ This guide will help you set up a local Express server to host your JARVIS React
 
 ### 1. Install Dependencies
 ```bash
-# Install the new server dependencies
+# Install the server dependencies
 pnpm install
 ```
 
@@ -104,10 +104,6 @@ Create a `.env` file in the root directory:
 PORT=3000
 NODE_ENV=development
 
-# Database Configuration (if using Supabase)
-VITE_SUPABASE_URL=your_supabase_url_here
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-
 # API Configuration
 API_BASE_URL=http://localhost:3000/api
 ```
@@ -124,10 +120,9 @@ This server setup is ready for deployment to platforms like:
 ## 📝 Next Steps
 
 1. **Add API Routes**: Extend the server with your backend functionality
-2. **Database Integration**: Connect to your Supabase database
-3. **Authentication**: Add user authentication endpoints
-4. **File Upload**: Add file upload capabilities
-5. **WebSocket**: Add real-time features with Socket.io
+2. **Authentication**: Add user authentication endpoints (if needed)
+3. **File Upload**: Add file upload capabilities
+4. **WebSocket**: Add real-time features with Socket.io
 
 ## 🎯 Usage Examples
 

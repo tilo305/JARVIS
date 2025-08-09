@@ -1,134 +1,93 @@
-import { supabase, supabaseHelpers } from '../lib/supabase';
+// JARVIS Service - Supabase-free (localStorage-based) backend ops
 
-// JARVIS Service - Handles all JARVIS-related backend operations
+const LS_KEYS = {
+  CHAT: 'jarvis_chat_messages',
+  LOGS: 'jarvis_system_logs',
+  SESSION: 'jarvis_session',
+};
+
+const getJSON = (key, fallback) => {
+  try {
+    const v = localStorage.getItem(key);
+    return v ? JSON.parse(v) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const setJSON = (key, value) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {}
+};
+
 export class JarvisService {
   constructor() {
-    this.currentUser = null;
+    this.currentUser = null; // no auth
     this.sessionId = null;
+    this.sessionStart = Date.now();
     this.initializeSession();
   }
 
-  // Initialize user session
+  // Initialize anonymous session locally
   async initializeSession() {
-    try {
-      const { user } = await supabaseHelpers.getCurrentUser();
-      this.currentUser = user;
-      
-      if (user) {
-        // Create or update user session
-        await this.createUserSession();
-      } else {
-        // Create anonymous session for demo purposes
-        this.sessionId = `anonymous_${Date.now()}`;
-      }
-    } catch (error) {
-      console.error('Failed to initialize session:', error);
-      this.sessionId = `anonymous_${Date.now()}`;
+    const existing = getJSON(LS_KEYS.SESSION, null);
+    if (existing && existing.sessionId) {
+      this.sessionId = existing.sessionId;
+      return;
     }
+    this.sessionId = `anonymous_${Date.now()}`;
+    setJSON(LS_KEYS.SESSION, {
+      sessionId: this.sessionId,
+      session_start: new Date().toISOString(),
+      device_info: {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+      },
+    });
   }
 
-  // Create user session record
-  async createUserSession() {
-    try {
-      const { data, error } = await supabase
-        .from('user_sessions')
-        .insert([
-          {
-            user_id: this.currentUser?.id,
-            session_start: new Date().toISOString(),
-            device_info: {
-              userAgent: navigator.userAgent,
-              platform: navigator.platform,
-              language: navigator.language
-            }
-          }
-        ])
-        .select()
-        .single();
-
-      if (data) {
-        this.sessionId = data.id;
-      }
-    } catch (error) {
-      console.error('Failed to create user session:', error);
-    }
-  }
-
-  // Save chat message to database
+  // Save chat message locally
   async saveChatMessage(message, sender = 'user', messageType = 'text') {
-    try {
-      const messageData = {
-        user_id: this.currentUser?.id,
-        message: message,
-        sender: sender,
-        message_type: messageType,
-        timestamp: new Date().toISOString(),
-        metadata: {
-          session_id: this.sessionId,
-          user_agent: navigator.userAgent
-        }
-      };
-
-      const { data, error } = await supabase
-        .from('chat_messages')
-        .insert([messageData])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Failed to save message:', error);
-        return null;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Error saving chat message:', error);
-      return null;
-    }
+    const messages = getJSON(LS_KEYS.CHAT, []);
+    const record = {
+      id: crypto?.randomUUID?.() || `${Date.now()}`,
+      user_id: this.currentUser?.id ?? null,
+      message,
+      sender,
+      message_type: messageType,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        session_id: this.sessionId,
+        user_agent: navigator.userAgent,
+      },
+    };
+    messages.push(record);
+    setJSON(LS_KEYS.CHAT, messages);
+    return record;
   }
 
-  // Get chat history for current user/session
+  // Read chat history (filtered by session when anonymous)
   async getChatHistory(limit = 50) {
-    try {
-      let query = supabase
-        .from('chat_messages')
-        .select('*')
-        .order('timestamp', { ascending: true })
-        .limit(limit);
-
-      if (this.currentUser) {
-        query = query.eq('user_id', this.currentUser.id);
-      } else {
-        // For anonymous users, filter by session metadata
-        query = query.eq('metadata->session_id', this.sessionId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Failed to get chat history:', error);
-        return [];
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('Error getting chat history:', error);
-      return [];
-    }
+    const messages = getJSON(LS_KEYS.CHAT, []);
+    const filtered = this.currentUser
+      ? messages.filter((m) => m.user_id === this.currentUser.id)
+      : messages.filter((m) => m.metadata?.session_id === this.sessionId);
+    return filtered.slice(-limit);
   }
 
-  // Generate JARVIS response based on personality guidelines
+  // Generate JARVIS response
   generateJarvisResponse(userInput) {
     const input = userInput.toLowerCase();
-    
-    // Casual/conversational responses
+
     if (input.includes('ready') || input.includes('get started')) {
       return "Absolutely, sir. I've already polished my circuits for the occasion.";
     }
     if (input.includes('look alive') || input.includes('wake up')) {
       return "Always, sir. I'm operating at peak sophistication.";
     }
-    if (input.includes('how are you') || input.includes('how\'s it going')) {
+    if (input.includes('how are you') || input.includes("how's it going")) {
       return "Functioning at optimal capacity, sir. Though I must say, the day lacks a certain... explosive excitement.";
     }
     if (input.includes('hello') || input.includes('hi ')) {
@@ -140,11 +99,7 @@ export class JarvisService {
     if (input.includes('thank you') || input.includes('thanks')) {
       return "My pleasure, sir. It's what I do—efficiently and with considerable style.";
     }
-    if (input.includes('good job') || input.includes('well done')) {
-      return "I do try to maintain my reputation for excellence, sir. It would be rather disappointing otherwise.";
-    }
-    
-    // Information request responses (with witty comments)
+
     if (input.includes('weather') || input.includes('temperature')) {
       return "Here's what you requested, sir. Ah, another fine day for conquering the world—or at least your to-do list, sir.";
     }
@@ -160,8 +115,7 @@ export class JarvisService {
     if (input.includes('news') || input.includes('update')) {
       return "Here's what you requested, sir. The world continues to spin, sir, though I suspect it's waiting for your next move.";
     }
-    
-    // Technical/system requests
+
     if (input.includes('system') || input.includes('status')) {
       return "All systems operating at peak efficiency, sir. Though I must say, I'm rather underutilized at the moment.";
     }
@@ -171,9 +125,8 @@ export class JarvisService {
     if (input.includes('scan') || input.includes('analyze')) {
       return "Scanning complete, sir. Everything appears to be in order—though I suspect you already knew that.";
     }
-    
-    // Default responses with JARVIS personality
-    const defaultResponses = [
+
+    const defaults = [
       "I understand your request, sir. Processing with my usual efficiency and charm.",
       "Certainly, sir. I'll handle that with the sophistication you've come to expect.",
       "Of course, sir. Consider it done—with a touch of British elegance, naturally.",
@@ -181,31 +134,22 @@ export class JarvisService {
       "Understood, sir. I'll apply my considerable intellect to this matter immediately.",
       "Very well, sir. I shall attend to that with my characteristic precision and wit.",
       "Naturally, sir. I was hoping you'd ask something that would challenge my capabilities.",
-      "Indeed, sir. Allow me to demonstrate why I'm considered rather exceptional at these things."
+      "Indeed, sir. Allow me to demonstrate why I'm considered rather exceptional at these things.",
     ];
-    
-    return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+    return defaults[Math.floor(Math.random() * defaults.length)];
   }
 
-  // Process user message and generate response
+  // Process and log interaction
   async processMessage(userMessage, messageType = 'text') {
     try {
-      // Save user message
       await this.saveChatMessage(userMessage, 'user', messageType);
-      
-      // Generate JARVIS response
       const jarvisResponse = this.generateJarvisResponse(userMessage);
-      
-      // Save JARVIS response
       await this.saveChatMessage(jarvisResponse, 'jarvis', 'text');
-      
-      // Log interaction
       await this.logSystemEvent('chat_interaction', {
         user_message: userMessage,
         jarvis_response: jarvisResponse,
-        message_type: messageType
+        message_type: messageType,
       });
-      
       return jarvisResponse;
     } catch (error) {
       console.error('Error processing message:', error);
@@ -213,80 +157,51 @@ export class JarvisService {
     }
   }
 
-  // Log system events
+  // Local logs (append-only)
   async logSystemEvent(eventType, eventData) {
-    try {
-      await supabase
-        .from('system_logs')
-        .insert([
-          {
-            user_id: this.currentUser?.id,
-            event_type: eventType,
-            event_data: eventData,
-            timestamp: new Date().toISOString()
-          }
-        ]);
-    } catch (error) {
-      console.error('Failed to log system event:', error);
-    }
+    const logs = getJSON(LS_KEYS.LOGS, []);
+    logs.push({
+      id: crypto?.randomUUID?.() || `${Date.now()}`,
+      user_id: this.currentUser?.id ?? null,
+      event_type: eventType,
+      event_data: eventData,
+      timestamp: new Date().toISOString(),
+    });
+    setJSON(LS_KEYS.LOGS, logs);
   }
 
-  // Voice processing placeholder (for future integration)
+  // Voice input placeholder
   async processVoiceInput(audioBlob) {
-    try {
-      // This would integrate with speech-to-text service
-      // For now, return a placeholder
-      await this.logSystemEvent('voice_input', {
-        audio_size: audioBlob.size,
-        audio_type: audioBlob.type
-      });
-      
-      return "Voice input received and processed, sir.";
-    } catch (error) {
-      console.error('Error processing voice input:', error);
-      return "I'm having trouble processing your voice input, sir. Perhaps we could try text instead?";
-    }
+    await this.logSystemEvent('voice_input', {
+      audio_size: audioBlob.size,
+      audio_type: audioBlob.type,
+    });
+    return "Voice input received and processed, sir.";
   }
 
-  // Text-to-speech placeholder (for future integration)
+  // TTS placeholder
   async synthesizeSpeech(text) {
-    try {
-      // This would integrate with text-to-speech service using the JARVIS voice
-      await this.logSystemEvent('speech_synthesis', {
-        text_length: text.length,
-        voice_model: 'jarvis'
-      });
-      
-      // Return audio URL or blob for playback
-      return null; // Placeholder
-    } catch (error) {
-      console.error('Error synthesizing speech:', error);
-      return null;
-    }
+    await this.logSystemEvent('speech_synthesis', {
+      text_length: text.length,
+      voice_model: 'jarvis',
+    });
+    return null;
   }
 
-  // Update user session on page unload
+  // End session (local update)
   async endSession() {
-    if (this.sessionId && this.currentUser) {
-      try {
-        await supabase
-          .from('user_sessions')
-          .update({
-            session_end: new Date().toISOString(),
-            duration_seconds: Math.floor((Date.now() - this.sessionStart) / 1000)
-          })
-          .eq('id', this.sessionId);
-      } catch (error) {
-        console.error('Failed to end session:', error);
-      }
-    }
+    const sess = getJSON(LS_KEYS.SESSION, null);
+    if (!sess) return;
+    sess.session_end = new Date().toISOString();
+    sess.duration_seconds = Math.floor((Date.now() - this.sessionStart) / 1000);
+    setJSON(LS_KEYS.SESSION, sess);
   }
 }
 
-// Create singleton instance
+// Singleton
 export const jarvisService = new JarvisService();
 
-// Cleanup on page unload
+// Cleanup on unload
 window.addEventListener('beforeunload', () => {
   jarvisService.endSession();
 });

@@ -129,21 +129,10 @@ ironman-app/
 Create a `.env` file in the root directory:
 
 ```env
-# Supabase Configuration
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-
 # Server Configuration
 PORT=3000
 NODE_ENV=development
 ```
-
-### Supabase Setup
-
-1. Create a Supabase project
-2. Get your project URL and anon key
-3. Add them to your `.env` file
-4. See `SUPABASE_SETUP.md` for detailed instructions
 
 ## 🚀 Deployment
 

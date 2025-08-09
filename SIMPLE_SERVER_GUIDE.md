@@ -112,9 +112,8 @@ This simple server can be easily deployed to:
 ## 📝 Next Steps
 
 1. **Add More API Routes**: Extend the server with your backend functionality
-2. **Database Integration**: Connect to your Supabase database
-3. **Authentication**: Add user authentication endpoints
-4. **File Upload**: Add file upload capabilities
+2. **Authentication**: Add user authentication endpoints (if needed)
+3. **File Upload**: Add file upload capabilities
 
 ---
 

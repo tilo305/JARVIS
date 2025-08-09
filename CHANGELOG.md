@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated README.md with comprehensive project information
 - Improved .gitignore for better file management
 - Enhanced server configuration
+- Removed Supabase integration in favor of localStorage for demo persistence
 
 ### Fixed
 - Dependency installation issues
@@ -34,7 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JARVIS chatbot interface
 - HUD elements with system stats
 - Responsive design for all devices
-- Supabase integration setup
 - TailwindCSS styling framework
 - Framer Motion animations
 - Radix UI component library
@@ -60,7 +60,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TailwindCSS 4.1.7
 - Framer Motion 12.15.0
 - Radix UI Components
-- Supabase 2.52.1
 - React Router 7.6.1
 
 ---
