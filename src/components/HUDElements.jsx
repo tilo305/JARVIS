@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Activity, Zap, Shield, Cpu } from 'lucide-react';
 
 const HUDElements = () => {
@@ -22,7 +22,7 @@ const HUDElements = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const StatCircle = ({ value, label, icon: Icon, color }) => (
+  const StatCircle = ({ value, label, icon: HudIconComponent }) => (
     <div className="relative w-24 h-24">
       <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
         <circle
@@ -37,19 +37,19 @@ const HUDElements = () => {
           cx="50"
           cy="50"
           r="45"
-          stroke={color}
+          stroke="#3B82F6"
           strokeWidth="2"
           fill="none"
           strokeDasharray={`${2 * Math.PI * 45}`}
           strokeDashoffset={`${2 * Math.PI * 45 * (1 - value / 100)}`}
           className="transition-all duration-1000 ease-out"
-          style={{
-            filter: `drop-shadow(0 0 8px ${color})`
-          }}
+           style={{
+             filter: 'drop-shadow(0 0 8px #3B82F6)'
+           }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <Icon className="w-4 h-4 text-blue-400 mb-1" />
+        <HudIconComponent className="w-4 h-4 text-blue-400 mb-1" />
         <span className="text-xs text-blue-400 font-semibold">{Math.round(value)}%</span>
       </div>
       <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2">

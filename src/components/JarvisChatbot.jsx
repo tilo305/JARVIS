@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff, Send, Volume2, VolumeX, Play, Users } from 'lucide-react';
 import chatbotVideo from '../assets/chatbot-video.mp4';
 import { jarvisService } from '../services/jarvisService';
+import { elevenLabsService } from '../services/elevenLabsService';
+// import { useDeviceToggle } from '../hooks/useDeviceToggle';
 
 const JarvisChatbot = () => {
   const [messages, setMessages] = useState([]);
@@ -9,11 +11,13 @@ const JarvisChatbot = () => {
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceEnabled] = useState(true);
   const [selectedCharacter, setSelectedCharacter] = useState('jarvis');
   const [showCharacterSelect, setShowCharacterSelect] = useState(false);
+  const [elevenLabsStatus, setElevenLabsStatus] = useState('initializing');
   const videoRef = useRef(null);
   const messagesEndRef = useRef(null);
+  // const { device } = useDeviceToggle();
 
   // Character configurations
   const characters = {
@@ -22,32 +26,58 @@ const JarvisChatbot = () => {
       greeting: "Good day, sir. JARVIS at your service. How may I assist you today?",
       color: 'blue',
       gradient: 'from-blue-500 to-cyan-500',
-      borderColor: 'border-blue-500'
+      borderColor: 'border-blue-500',
+      voiceId: 'pNInz6obpgDQGcFmaJgB' // Adam voice (British accent)
     },
     friday: {
       name: 'FRIDAY',
       greeting: "Hey there! FRIDAY here, ready to help out. What can I do for you?",
       color: 'purple',
       gradient: 'from-purple-500 to-pink-500',
-      borderColor: 'border-purple-500'
+      borderColor: 'border-purple-500',
+      voiceId: '21m00Tcm4TlvDq8ikWAM' // Rachel voice (American accent)
     },
     edith: {
       name: 'EDITH',
       greeting: "EDITH systems online. Advanced threat detection active. How may I assist?",
       color: 'red',
       gradient: 'from-red-500 to-orange-500',
-      borderColor: 'border-red-500'
+      borderColor: 'border-red-500',
+      voiceId: 'AZnzlk1XvdvUeBnXmlld' // Domi voice (American accent)
     },
     karen: {
       name: 'KAREN',
       greeting: "KAREN network interface ready. All systems operational. What do you need?",
       color: 'green',
       gradient: 'from-green-500 to-emerald-500',
-      borderColor: 'border-green-500'
+      borderColor: 'border-green-500',
+      voiceId: 'EXAVITQu4vr4xnSDxMaL' // Bella voice (British accent)
     }
   };
 
   const currentCharacter = characters[selectedCharacter];
+
+  // Initialize ElevenLabs service
+  useEffect(() => {
+    const initElevenLabs = async () => {
+      try {
+        setElevenLabsStatus('connecting');
+        const success = await elevenLabsService.initialize();
+        setElevenLabsStatus(success ? 'connected' : 'failed');
+        
+        if (success) {
+          console.log('ElevenLabs service initialized successfully');
+        } else {
+          console.warn('ElevenLabs service failed to initialize, falling back to browser speech');
+        }
+      } catch (error) {
+        console.error('Error initializing ElevenLabs:', error);
+        setElevenLabsStatus('failed');
+      }
+    };
+
+    initElevenLabs();
+  }, []);
 
   // Initialize with greeting
   useEffect(() => {
@@ -70,24 +100,30 @@ const JarvisChatbot = () => {
     setShowCharacterSelect(false);
   };
 
-  const playJarvisVoiceSample = () => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(
-        "Voice sample activated. All systems operational, sir."
-      );
-      utterance.rate = 0.9;
-      utterance.pitch = 0.8;
-      speechSynthesis.speak(utterance);
+  const playJarvisVoiceSample = async () => {
+    const sampleText = "Voice sample activated. All systems operational, sir.";
+    const envVoiceId = import.meta.env.VITE_ELEVENLABS_VOICE_ID;
+    
+    try {
+      if (elevenLabsStatus === 'connected') {
+        await elevenLabsService.speak(sampleText, {
+          voiceId: envVoiceId || currentCharacter.voiceId
+        });
+      } else {
+        // Fallback to browser speech synthesis
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(sampleText);
+          utterance.rate = 0.9;
+          utterance.pitch = 0.8;
+          speechSynthesis.speak(utterance);
+        }
+      }
+    } catch (error) {
+      console.error('Error playing voice sample:', error);
     }
   };
 
-  const toggleSpeaking = () => {
-    setVoiceEnabled(!voiceEnabled);
-    if (voiceEnabled && isSpeaking) {
-      speechSynthesis.cancel();
-      setIsSpeaking(false);
-    }
-  };
+  // Toggle speaking not used currently; keeping voiceEnabled control inline where needed
 
   const toggleListening = () => {
     if (!('webkitSpeechRecognition' in window)) {
@@ -100,6 +136,33 @@ const JarvisChatbot = () => {
     } else {
       setIsListening(true);
       // Add speech recognition logic here
+    }
+  };
+
+  const speakWithElevenLabs = async (text) => {
+    const envVoiceId = import.meta.env.VITE_ELEVENLABS_VOICE_ID;
+    try {
+      setIsSpeaking(true);
+      await elevenLabsService.speak(text, {
+        voiceId: envVoiceId || currentCharacter.voiceId,
+        voiceSettings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+          style: 0.0,
+          use_speaker_boost: true
+        }
+      });
+    } catch (error) {
+      console.error('ElevenLabs speech error:', error);
+      // Fallback to browser speech synthesis
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.pitch = 0.8;
+        speechSynthesis.speak(utterance);
+      }
+    } finally {
+      setIsSpeaking(false);
     }
   };
 
@@ -129,15 +192,22 @@ const JarvisChatbot = () => {
       
       setMessages(prev => [...prev, aiMessage]);
 
-      if (voiceEnabled && 'speechSynthesis' in window) {
-        setIsSpeaking(true);
-        const utterance = new SpeechSynthesisUtterance(response);
-        utterance.rate = 0.9;
-        utterance.pitch = 0.8;
-        utterance.onend = () => setIsSpeaking(false);
-        speechSynthesis.speak(utterance);
+      if (voiceEnabled) {
+        if (elevenLabsStatus === 'connected') {
+          await speakWithElevenLabs(response);
+        } else {
+          // Fallback to browser speech synthesis
+          if ('speechSynthesis' in window) {
+            setIsSpeaking(true);
+            const utterance = new SpeechSynthesisUtterance(response);
+            utterance.rate = 0.9;
+            utterance.pitch = 0.8;
+            utterance.onend = () => setIsSpeaking(false);
+            speechSynthesis.speak(utterance);
+          }
+        }
       }
-    } catch (error) {
+    } catch {
       const errorMessage = {
         id: Date.now() + 1,
         text: "I apologize, sir, but I seem to be experiencing a minor technical difficulty. Perhaps we could try that again?",
@@ -221,11 +291,33 @@ const JarvisChatbot = () => {
                  isListening ? 'Listening...' :
                  'AI Assistant'}
               </p>
+              {/* ElevenLabs Status Indicator */}
+              <div className="flex items-center space-x-1 mt-1">
+                <div className={`w-2 h-2 rounded-full ${
+                  elevenLabsStatus === 'connected' ? 'bg-green-400' :
+                  elevenLabsStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
+                  'bg-red-400'
+                }`}></div>
+                <span className="text-xs text-gray-400">
+                  {elevenLabsStatus === 'connected' ? 'ElevenLabs' :
+                   elevenLabsStatus === 'connecting' ? 'Connecting...' :
+                   'Browser Speech'}
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Controls */}
           <div className="flex space-x-2">
+            {/* Voice Sample Button */}
+            <button
+              onClick={playJarvisVoiceSample}
+              className="p-2 rounded-full bg-purple-600 hover:bg-purple-700 transition-all duration-300"
+              title="Play Voice Sample"
+            >
+              <Play className="w-4 h-4 text-white" />
+            </button>
+            
             {/* Voice Input */}
             <button
               onClick={toggleListening}

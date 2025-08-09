@@ -10,7 +10,6 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://n8n.hempstarai.com/webhook/n8n';
 
 // Security middleware
 app.use(helmet({
@@ -39,45 +38,40 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// n8n webhook proxy
-app.all('/api/webhook/n8n', async (req, res) => {
+// ElevenLabs TTS proxy (server-side key)
+app.post('/api/tts', async (req, res) => {
   try {
-    const targetUrl = new URL(N8N_WEBHOOK_URL);
-    // Forward query params
-    for (const [key, value] of Object.entries(req.query)) {
-      targetUrl.searchParams.append(key, value);
-    }
+    const elevenKey = process.env.ELEVENLABS_API_KEY;
+    if (!elevenKey) return res.status(500).json({ error: 'Server TTS not configured: ELEVENLABS_API_KEY missing' });
 
-    // Build headers
-    const headers = {};
-    const keepHeader = (name) => ['content-type', 'authorization', 'x-api-key'].includes(name.toLowerCase());
-    for (const [name, value] of Object.entries(req.headers)) {
-      if (keepHeader(name)) headers[name] = value;
-    }
+    const { text, voiceId, modelId, voiceSettings } = req.body || {};
+    if (!text) return res.status(400).json({ error: 'Missing text' });
 
-    // Choose body depending on content-type
-    let body;
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      if (headers['content-type'] && headers['content-type'].includes('application/json')) {
-        body = JSON.stringify(req.body);
-      } else {
-        // For non-JSON, rely on raw body via text
-        body = typeof req.body === 'string' ? req.body : undefined;
-      }
-    }
+    const resolvedVoiceId = voiceId || process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB';
+    const resolvedModelId = modelId || process.env.ELEVENLABS_MODEL_ID || 'eleven_monolingual_v1';
+    const resolvedSettings = voiceSettings || {
+      stability: Number(process.env.ELEV_STABILITY ?? 0.5),
+      similarity_boost: Number(process.env.ELEV_SIMILARITY ?? 0.75),
+      style: Number(process.env.ELEV_STYLE ?? 0.0),
+      use_speaker_boost: (process.env.ELEV_SPEAKER_BOOST ?? 'true') === 'true'
+    };
 
-    const resp = await fetch(targetUrl.toString(), {
-      method: req.method,
-      headers,
-      body,
+    const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${resolvedVoiceId}`, {
+      method: 'POST',
+      headers: { 'xi-api-key': elevenKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, model_id: resolvedModelId, voice_settings: resolvedSettings })
     });
-
-    const contentType = resp.headers.get('content-type') || 'application/json';
-    const buffer = Buffer.from(await resp.arrayBuffer());
-    res.status(resp.status).set('Content-Type', contentType).send(buffer);
+    if (!r.ok) {
+      const errText = await r.text();
+      return res.status(r.status).type('text/plain').send(errText);
+    }
+    const buf = Buffer.from(await r.arrayBuffer());
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Content-Length', buf.length);
+    return res.send(buf);
   } catch (err) {
-    console.error('n8n webhook proxy error:', err);
-    res.status(502).json({ error: 'Failed to reach n8n webhook', details: err.message });
+    console.error('TTS proxy error:', err);
+    return res.status(500).json({ error: 'TTS proxy error', details: err.message });
   }
 });
 
@@ -88,6 +82,7 @@ app.get('*', (req, res) => {
 });
 
 // Error handling middleware
+// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ 
@@ -106,7 +101,7 @@ app.listen(PORT, () => {
   console.log(`📁 Serving static files from: ${path.join(__dirname, 'dist')}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`⏰ Started at: ${new Date().toISOString()}`);
-  console.log(`🔗 n8n webhook proxy: ALL http://localhost:${PORT}/api/webhook/n8n -> ${N8N_WEBHOOK_URL}`);
+  console.log(`🔊 TTS endpoint: POST http://localhost:${PORT}/api/tts`);
 });
 
 // Graceful shutdown

@@ -30,7 +30,7 @@ export class JarvisService {
   // Create user session record
   async createUserSession() {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('user_sessions')
         .insert([
           {
@@ -49,8 +49,8 @@ export class JarvisService {
       if (data) {
         this.sessionId = data.id;
       }
-    } catch (error) {
-      console.error('Failed to create user session:', error);
+    } catch (err) {
+      console.error('Failed to create user session:', err);
     }
   }
 

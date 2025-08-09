@@ -403,3 +403,204 @@
   z-index: 999 !important;
 }
 
+/* Device Toggle Enhancements - Higher Specificity */
+.device-desktop,
+.device-tablet,
+.device-mobile {
+  transition: all 0.3s ease-in-out !important;
+  position: relative !important;
+  overflow: hidden !important;
+  min-height: 100vh !important;
+}
+
+.device-desktop {
+  max-width: 100% !important;
+  width: 100% !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+}
+
+.device-tablet {
+  max-width: 768px !important;
+  width: 768px !important;
+  border: 2px solid #06b6d4 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 0 20px rgba(6,182,212,0.15) !important;
+  margin: 0 auto !important;
+  background-color: #000 !important;
+}
+
+.device-mobile {
+  max-width: 375px !important;
+  width: 375px !important;
+  border: 2px solid #3b82f6 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 0 20px rgba(59,130,246,0.2) !important;
+  margin: 0 auto !important;
+  background-color: #000 !important;
+}
+
+/* Force device styles with !important and data attributes */
+[data-device="desktop"] {
+  max-width: 100% !important;
+  width: 100% !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+}
+
+[data-device="tablet"] {
+  max-width: 768px !important;
+  width: 768px !important;
+  border: 2px solid #06b6d4 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 0 20px rgba(6,182,212,0.15) !important;
+  margin: 0 auto !important;
+  background-color: #000 !important;
+}
+
+[data-device="mobile"] {
+  max-width: 375px !important;
+  width: 375px !important;
+  border: 2px solid #3b82f6 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 0 20px rgba(59,130,246,0.2) !important;
+  margin: 0 auto !important;
+  background-color: #000 !important;
+}
+
+/* Transition animations */
+.transitioning {
+  animation: deviceTransition 0.3s ease-in-out;
+}
+
+@keyframes deviceTransition {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Device-specific responsive adjustments */
+.device-tablet .jarvis-chatbot {
+  width: 280px !important;
+  height: 380px !important;
+  bottom: 15px !important;
+  right: 15px !important;
+}
+
+.device-mobile .jarvis-chatbot {
+  width: 260px !important;
+  height: 320px !important;
+  bottom: 10px !important;
+  right: 10px !important;
+}
+
+.device-tablet .device-toggle-container {
+  top: 10px !important;
+  right: 10px !important;
+}
+
+.device-mobile .device-toggle-container {
+  top: 8px !important;
+  right: 8px !important;
+}
+
+/* Enhanced button hover effects */
+.device-toggle button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.device-toggle button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+/* Device info overlay animations */
+.device-info-overlay {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive device toggle for smaller screens */
+@media (max-width: 768px) {
+  .device-toggle {
+    top: 8px !important;
+    right: 8px !important;
+    padding: 8px !important;
+  }
+  
+  .device-toggle button {
+    width: 12px !important;
+    height: 12px !important;
+  }
+  
+  .device-toggle button span {
+    font-size: 8px !important;
+  }
+}
+
+/* Device simulation improvements */
+.device-simulation-container {
+  position: relative;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+}
+
+.device-tablet .device-simulation-container,
+.device-mobile .device-simulation-container {
+  background: #000;
+}
+
+/* Enhanced visual feedback for device changes */
+.device-change-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(59, 130, 246, 0.9);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  z-index: 9999;
+  animation: deviceChangeNotification 0.5s ease-out;
+}
+
+@keyframes deviceChangeNotification {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+

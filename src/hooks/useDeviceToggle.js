@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react';
 
-const DEVICE_TYPES = ['desktop', 'tablet', 'mobile'];
-
 export const useDeviceToggle = () => {
   const [device, setDevice] = useState(() => {
     return localStorage.getItem('jarvis-device') || 'desktop';
   });
 
   useEffect(() => {
+    console.log('Device changed to:', device);
     localStorage.setItem('jarvis-device', device);
   }, [device]);
 
   const setDeviceType = (type) => {
-    if (DEVICE_TYPES.includes(type)) {
+    console.log('setDeviceType called with:', type);
+    if (['desktop', 'tablet', 'mobile'].includes(type)) {
+      console.log('Setting device to:', type);
       setDevice(type);
+    } else {
+      console.log('Invalid device type:', type);
     }
   };
 
