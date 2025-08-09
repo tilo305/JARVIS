@@ -1,4 +1,5 @@
 // JARVIS Service - Supabase-free (localStorage-based) backend ops
+const N8N_WEBHOOK_URL = 'https://n8n.hempstarai.com/webhook/061f91ff-420a-4040-bff7-5f81fb9fb9cd';
 
 const LS_KEYS = {
   CHAT: 'jarvis_chat_messages',
@@ -46,10 +47,19 @@ export class JarvisService {
         language: navigator.language,
       },
     });
+    // Fire-and-forget webhook for session start
+    this.sendToWebhook('session_start', {
+      session_id: this.sessionId,
+      device_info: {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+      },
+    });
   }
 
   // Save chat message locally
-  async saveChatMessage(message, sender = 'user', messageType = 'text') {
+  async saveChatMessage(message, sender = 'user', messageType = 'text', extraMetadata = {}) {
     const messages = getJSON(LS_KEYS.CHAT, []);
     const record = {
       id: crypto?.randomUUID?.() || `${Date.now()}`,
@@ -61,6 +71,7 @@ export class JarvisService {
       metadata: {
         session_id: this.sessionId,
         user_agent: navigator.userAgent,
+        ...extraMetadata,
       },
     };
     messages.push(record);
@@ -140,21 +151,30 @@ export class JarvisService {
   }
 
   // Process and log interaction
-  async processMessage(userMessage, messageType = 'text') {
+  async processMessage(userMessage, messageType = 'text', extraMetadata = {}) {
     try {
-      await this.saveChatMessage(userMessage, 'user', messageType);
+      await this.saveChatMessage(userMessage, 'user', messageType, extraMetadata);
       const jarvisResponse = this.generateJarvisResponse(userMessage);
-      await this.saveChatMessage(jarvisResponse, 'jarvis', 'text');
-      await this.logSystemEvent('chat_interaction', {
+      await this.saveChatMessage(jarvisResponse, 'jarvis', 'text', extraMetadata);
+      const eventPayload = {
         user_message: userMessage,
         jarvis_response: jarvisResponse,
         message_type: messageType,
-      });
+         metadata: extraMetadata,
+       };
+      await this.logSystemEvent('chat_interaction', eventPayload);
+      // Send webhook (non-blocking)
+      this.sendToWebhook('chat_interaction', eventPayload);
       return jarvisResponse;
     } catch (error) {
       console.error('Error processing message:', error);
       return "I apologize, sir, but I seem to be experiencing a minor technical difficulty. Perhaps we could try that again?";
     }
+  }
+
+  // Backwards/compat API used by UI
+  async sendMessage(userMessage, selectedCharacter = 'jarvis') {
+    return this.processMessage(userMessage, 'text', { selected_character: selectedCharacter });
   }
 
   // Local logs (append-only)
@@ -168,6 +188,8 @@ export class JarvisService {
       timestamp: new Date().toISOString(),
     });
     setJSON(LS_KEYS.LOGS, logs);
+    // Also send to webhook without blocking UI
+    this.sendToWebhook(eventType, eventData);
   }
 
   // Voice input placeholder
@@ -195,6 +217,30 @@ export class JarvisService {
     sess.session_end = new Date().toISOString();
     sess.duration_seconds = Math.floor((Date.now() - this.sessionStart) / 1000);
     setJSON(LS_KEYS.SESSION, sess);
+    this.sendToWebhook('session_end', {
+      session_id: this.sessionId,
+      duration_seconds: sess.duration_seconds,
+    });
+  }
+
+  // Internal: send event to n8n webhook
+  async sendToWebhook(eventType, payload) {
+    try {
+      await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: eventType,
+          session_id: this.sessionId,
+          timestamp: new Date().toISOString(),
+          payload,
+        }),
+        keepalive: true,
+      });
+    } catch (err) {
+      // Swallow errors to avoid disrupting UX; still logged to console for debugging
+      console.warn('Webhook send failed:', err?.message || err);
+    }
   }
 }
 
