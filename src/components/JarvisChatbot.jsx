@@ -18,6 +18,8 @@ const JarvisChatbot = () => {
   const elevenWidgetRef = useRef(null);
   const [isElevenWidgetReady, setIsElevenWidgetReady] = useState(false);
   const conversationRef = useRef(null);
+  const silenceTimerRef = useRef(null);
+  const SILENCE_TIMEOUT_MS = 10000;
 
   // Try to programmatically trigger the ElevenLabs widget
   const handleMicWidgetTrigger = async () => {
@@ -34,6 +36,7 @@ const JarvisChatbot = () => {
       try { await conversationRef.current.endSession(); } catch {}
       conversationRef.current = null;
       setIsListening(false);
+      if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
       return;
     }
 
@@ -41,15 +44,36 @@ const JarvisChatbot = () => {
       setIsListening(true);
       const conv = await Conversation.startSession({
         agentId: 'agent_7601k23b460aeejb2pvyfcvw6atk',
-        onConnect: () => setIsListening(true),
-        onDisconnect: () => setIsListening(false),
+        onConnect: () => {
+          setIsListening(true);
+        },
+        onDisconnect: () => {
+          setIsListening(false);
+          if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
+        },
         onError: (error) => {
           console.error('ElevenLabs conversation error', error);
           alert(`Voice error: ${error?.message || 'Unknown error'}`);
           setIsListening(false);
+          if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
         },
         onModeChange: (mode) => {
-          if (mode?.mode === 'speaking') setIsSpeaking(true); else setIsSpeaking(false);
+          if (mode?.mode === 'speaking') {
+            setIsSpeaking(true);
+            if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
+            return;
+          }
+          setIsSpeaking(false);
+          // Start/refresh inactivity timer while agent is listening
+          if (mode?.mode === 'listening') {
+            if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+            silenceTimerRef.current = setTimeout(async () => {
+              try { await conversationRef.current?.endSession(); } catch {}
+              conversationRef.current = null;
+              setIsListening(false);
+              setIsSpeaking(false);
+            }, SILENCE_TIMEOUT_MS);
+          }
         },
       });
       conversationRef.current = conv;
@@ -59,6 +83,12 @@ const JarvisChatbot = () => {
       setIsListening(false);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    };
+  }, []);
 
   // Character configurations
   const characters = {
