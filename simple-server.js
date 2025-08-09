@@ -9,7 +9,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3000;
-const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || '';
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://n8n.hempstarai.com/webhook/061f91ff-420a-4040-bff7-5f81fb9fb9cd';
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || '';
+const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'MDVSvwVsP5rjXJ2po49l'; // default: user-provided voice
+
+function safeJsonParse(text) {
+  try { return JSON.parse(text); } catch { return null; }
+}
 
 // MIME types for different file extensions
 const mimeTypes = {
@@ -133,6 +139,70 @@ const server = createServer(async (req, res) => {
       }
     });
 
+    return;
+  }
+
+  // ElevenLabs TTS proxy (server-side key handling)
+  if (req.url === '/api/tts' && req.method === 'POST') {
+    if (!ELEVENLABS_API_KEY) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'ELEVENLABS_API_KEY not configured on server' }));
+      return;
+    }
+
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; if (body.length > 1 * 1024 * 1024) { res.writeHead(413).end(); req.destroy(); }});
+    req.on('end', async () => {
+      try {
+        const { text, voiceId, modelId, outputFormat } = safeJsonParse(body) || {};
+        if (!text || typeof text !== 'string' || text.trim().length === 0) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing text' }));
+          return;
+        }
+
+        const finalVoiceId = voiceId || ELEVENLABS_VOICE_ID;
+        if (!finalVoiceId) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'No voice ID provided and ELEVENLABS_VOICE_ID not set' }));
+          return;
+        }
+
+        const url = `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(finalVoiceId)}?optimize_streaming_latency=2&output_format=${encodeURIComponent(outputFormat || 'mp3_44100_128')}`;
+        const upstream = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'xi-api-key': ELEVENLABS_API_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            text,
+            model_id: modelId || 'eleven_multilingual_v2'
+          })
+        });
+
+        if (!upstream.ok) {
+          const errText = await upstream.text();
+          res.writeHead(upstream.status, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'ElevenLabs TTS failed', details: safeJsonParse(errText) || errText }));
+          return;
+        }
+
+        // Stream the audio back to client
+        res.writeHead(200, { 'Content-Type': 'audio/mpeg' });
+        const reader = upstream.body.getReader();
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          if (value) res.write(Buffer.from(value));
+        }
+        res.end();
+      } catch (error) {
+        console.error('Error handling /api/tts:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Internal server error' }));
+      }
+    });
     return;
   }
 

@@ -84,58 +84,97 @@ const JarvisChatbot = () => {
   const toggleSpeaking = () => {
     setVoiceEnabled(!voiceEnabled);
     if (voiceEnabled && isSpeaking) {
-      speechSynthesis.cancel();
+      // Stop any current ElevenLabs audio playback
+      const audios = document.querySelectorAll('audio[data-elevenlabs]');
+      audios.forEach((a) => { try { a.pause(); a.currentTime = 0; } catch (_) {} });
       setIsSpeaking(false);
     }
   };
 
   const toggleListening = () => {
-    if (!('webkitSpeechRecognition' in window)) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
       alert('Speech recognition not supported in this browser');
       return;
     }
 
     if (isListening) {
       setIsListening(false);
-    } else {
-      setIsListening(true);
-      // Add speech recognition logic here
+      try { window.__jarvisRecognition && window.__jarvisRecognition.stop(); } catch (_) {}
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      window.__jarvisRecognition = recognition;
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.onstart = () => setIsListening(true);
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
+      recognition.onresult = async (event) => {
+        const transcript = event.results[0][0].transcript?.trim();
+        if (!transcript) return;
+        setInputMessage(transcript);
+        await sendMessageFromSource(transcript);
+      };
+      recognition.start();
+    } catch (err) {
+      console.error('Recognition error', err);
+      setIsListening(false);
     }
   };
 
-  const sendMessage = async () => {
-    if (!inputMessage.trim() || isProcessing) return;
+  const playWithElevenLabs = async (text) => {
+    try {
+      setIsSpeaking(true);
+      const response = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      if (!response.ok) throw new Error('TTS failed');
+      const arrayBuffer = await response.arrayBuffer();
+      const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.setAttribute('data-elevenlabs', 'true');
+      audio.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); };
+      await audio.play();
+    } catch (e) {
+      console.warn('ElevenLabs TTS playback failed, suppressing voice:', e);
+      setIsSpeaking(false);
+    }
+  };
+
+  const sendMessageFromSource = async (textToSend) => {
+    const content = textToSend ?? inputMessage;
+    if (!content?.trim() || isProcessing) return;
 
     const userMessage = {
       id: Date.now(),
-      text: inputMessage,
+      text: content,
       sender: 'user',
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
+    if (textToSend === undefined) setInputMessage('');
     setIsProcessing(true);
 
     try {
-      const response = await jarvisService.sendMessage(inputMessage, selectedCharacter);
-      
+      const response = await jarvisService.sendMessage(content, selectedCharacter);
       const aiMessage = {
         id: Date.now() + 1,
         text: response,
         sender: 'ai',
         timestamp: new Date()
       };
-      
       setMessages(prev => [...prev, aiMessage]);
 
-      if (voiceEnabled && 'speechSynthesis' in window) {
-        setIsSpeaking(true);
-        const utterance = new SpeechSynthesisUtterance(response);
-        utterance.rate = 0.9;
-        utterance.pitch = 0.8;
-        utterance.onend = () => setIsSpeaking(false);
-        speechSynthesis.speak(utterance);
+      if (voiceEnabled) {
+        await playWithElevenLabs(response);
       }
     } catch (error) {
       const errorMessage = {
@@ -148,6 +187,10 @@ const JarvisChatbot = () => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const sendMessage = async () => {
+    await sendMessageFromSource();
   };
 
   const handleKeyPress = (e) => {

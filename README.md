@@ -1,3 +1,32 @@
+# JARVIS Iron Man App
+
+## Environment
+
+Create a local environment before starting the server. Do NOT commit secrets.
+
+On PowerShell:
+
+```
+$env:PORT='3000'
+$env:N8N_WEBHOOK_URL='https://n8n.hempstarai.com/webhook/061f91ff-420a-4040-bff7-5f81fb9fb9cd'
+$env:ELEVENLABS_API_KEY='REPLACE_WITH_YOUR_SECURE_KEY'
+$env:ELEVENLABS_VOICE_ID='MDVSvwVsP5rjXJ2po49l'
+```
+
+Then run the server:
+
+```
+node .\simple-server.js
+```
+
+In another terminal, start the frontend:
+
+```
+pnpm dev
+```
+
+> Never hardcode `ELEVENLABS_API_KEY` in client-side code or commit it to git. Use environment variables only.
+
 # 🤖 JARVIS - AI-Powered Personal Assistant
 
 A modern, Iron Man-inspired personal assistant built with React, featuring voice interaction, chatbot capabilities, and a sleek UI design.
