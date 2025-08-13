@@ -7,7 +7,8 @@ type Message = {
 	text: string;
 };
 
-const N8N_WEBHOOK_URL = "https://n8n.hempstarai.com/webhook/061f91ff-420a-4040-bff7-5f81fb9fb9cd";
+// Use internal API route to keep the n8n webhook URL server-side
+const INTERNAL_CHAT_API = "/api/chat";
 
 const ChatUI: React.FC = () => {
 	const [messages, setMessages] = useState<Message[]>([]);
@@ -30,7 +31,7 @@ const ChatUI: React.FC = () => {
 		setIsSending(true);
 
 		try {
-			const response = await fetch(N8N_WEBHOOK_URL, {
+			const response = await fetch(INTERNAL_CHAT_API, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ message: trimmed }),

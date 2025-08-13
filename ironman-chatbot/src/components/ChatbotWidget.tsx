@@ -3,7 +3,8 @@
 import React, { useCallback, useEffect } from "react";
 
 const ELEVENLABS_SCRIPT_ID = "elevenlabs-convai-script";
-const ELEVENLABS_SCRIPT_SRC = "https://unpkg.com/@elevenlabs/convai-widget-embed";
+const ELEVENLABS_SCRIPT_SRC = process.env.NEXT_PUBLIC_ELEVENLABS_WIDGET_SRC || "https://unpkg.com/@elevenlabs/convai-widget-embed";
+const ELEVENLABS_AGENT_ID = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
 
 const ChatbotWidget: React.FC = () => {
 	useEffect(() => {
@@ -14,6 +15,13 @@ const ChatbotWidget: React.FC = () => {
 			script.async = true;
 			script.type = "text/javascript";
 			document.body.appendChild(script);
+		}
+
+		// Inject widget element when agent id is provided
+		if (ELEVENLABS_AGENT_ID && !document.querySelector("elevenlabs-convai")) {
+			const widget = document.createElement("elevenlabs-convai");
+			widget.setAttribute("agent-id", ELEVENLABS_AGENT_ID);
+			document.body.appendChild(widget);
 		}
 	}, []);
 
