@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useMemo, useRef, useState } from "react";
+import VoiceButton from "./VoiceButton";
 
 type Message = {
 	role: "user" | "assistant" | "system";
@@ -14,6 +15,7 @@ const ChatUI: React.FC = () => {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [input, setInput] = useState("");
 	const [isSending, setIsSending] = useState(false);
+	const [isExpanded, setIsExpanded] = useState(false);
 	const listRef = useRef<HTMLDivElement | null>(null);
 
 	const scrollToBottom = useCallback(() => {
@@ -62,16 +64,41 @@ const ChatUI: React.FC = () => {
 		[]
 	);
 
-	return (
-		<div className="w-full max-w-xl rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-xl p-4 sm:p-6 text-white">
+		const containerClassName = isExpanded
+			? "w-full max-w-2xl rounded-lg bg-white/10 backdrop-blur-md border border-white/20 shadow-xl p-3 sm:p-4 text-white"
+			: "w-full max-w-sm rounded-lg bg-white/10 backdrop-blur-md border border-white/20 shadow-xl p-2 sm:p-3 text-white";
+
+		const listClassName = isExpanded
+			? "max-h-[70vh] overflow-y-auto space-y-3 pr-1"
+			: "max-h-[30vh] overflow-y-auto space-y-2 pr-1";
+
+		const handleToggleExpand = useCallback(() => {
+			setIsExpanded((prev) => !prev);
+		}, []);
+
+		return (
+			<div className={containerClassName}>
+				<div className="flex items-center justify-end">
+					<button
+						onClick={handleToggleExpand}
+						className="rounded-md bg-white/10 hover:bg-white/20 border border-white/20 px-2 py-1 text-xs"
+						aria-label={isExpanded ? "Collapse chat window" : "Expand chat window"}
+						aria-pressed={isExpanded}
+						type="button"
+					>
+						{isExpanded ? "Collapse" : "Expand"}
+					</button>
+				</div>
 			<div
 				ref={listRef}
-				className="max-h-[46vh] overflow-y-auto space-y-3 pr-1"
+				className={listClassName}
 				aria-live="polite"
 				role="log"
 			>
 				{messages.length === 0 ? (
-					<p className="text-white/80 text-sm">Start by typing below or use the Voice button.</p>
+					<div className="flex justify-center py-3">
+						<VoiceButton className="inline-flex items-center gap-1 rounded-md bg-cyan-500/80 hover:bg-cyan-400 text-white px-3 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-300 focus:ring-offset-black/40" />
+					</div>
 				) : (
 					messages.map((m, idx) => (
 						<div
@@ -97,7 +124,7 @@ const ChatUI: React.FC = () => {
 					value={input}
 					onChange={(e) => setInput(e.target.value)}
 					placeholder={isSending ? "Processing..." : placeholder}
-					className="flex-1 rounded-lg bg-black/40 border border-white/20 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-400"
+					className="flex-1 rounded-md bg-black/40 border border-white/20 px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-cyan-400"
 					aria-label="Type a message"
 					aria-busy={isSending}
 					autoComplete="off"
@@ -105,7 +132,7 @@ const ChatUI: React.FC = () => {
 				<button
 					type="submit"
 					disabled={isSending}
-					className="rounded-lg bg-cyan-500/80 hover:bg-cyan-400 disabled:opacity-50 px-4 py-2 text-sm font-medium"
+					className="rounded-md bg-cyan-500/80 hover:bg-cyan-400 disabled:opacity-50 px-3 py-1 text-xs font-medium"
 					aria-disabled={isSending}
 				>
 					Send
