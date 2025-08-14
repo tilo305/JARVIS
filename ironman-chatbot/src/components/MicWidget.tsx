@@ -21,6 +21,8 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
     const stopTimeoutRef = useRef<number | null>(null);
     const playbackRef = useRef<HTMLAudioElement | null>(null);
     const widgetRef = useRef<HTMLElement | null>(null);
+    const [hasWidgetActivated, setHasWidgetActivated] = useState(false);
+    const [showActivationOverlay, setShowActivationOverlay] = useState(false);
 
     const tryActivateElevenLabs = useCallback(() => {
         const el = widgetRef.current;
@@ -78,6 +80,12 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
 		}
 
 		try {
+            if (!hasWidgetActivated) {
+                // First-time activation: ask user to click once on the invisible widget overlay
+                setShowActivationOverlay(true);
+                setStatus("Tap to enable voice once…");
+                return;
+            }
 			setStatus("Listening...");
 			chunksRef.current = [];
             // Try to activate the ElevenLabs widget behind the mic (if present)
@@ -177,7 +185,7 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
             console.error("[MicWidget] getUserMedia failed", error);
             setStatus("Mic error");
 		}
-	}, [cleanupStream, handleStopRecording, onAssistantText]);
+    }, [cleanupStream, handleStopRecording, onAssistantText, hasWidgetActivated, tryActivateElevenLabs]);
 
 	useEffect(() => () => {
 		if (stopTimeoutRef.current !== null) window.clearTimeout(stopTimeoutRef.current);
@@ -197,6 +205,29 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
                                 agent-id={(process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || "") as any}
                                 variant="compact"
                                 style={{ transform: "scale(0.30)", transformOrigin: "center", opacity: 0.04 }}
+                            ></elevenlabs-convai>
+                        </div>
+                    )}
+
+                    {/* One-time invisible overlay to capture a real user click and forward it to the widget */}
+                    {showActivationOverlay && !!(process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || "") && (
+                        <div
+                            className="absolute inset-0 z-20 cursor-pointer"
+                            onClick={() => {
+                                setHasWidgetActivated(true);
+                                setShowActivationOverlay(false);
+                                // Defer to next tick so the widget processes the user gesture first
+                                setTimeout(() => {
+                                    tryActivateElevenLabs();
+                                    // Start recording after activation
+                                    handleToggleRecording();
+                                }, 50);
+                            }}
+                        >
+                            <elevenlabs-convai
+                                agent-id={(process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || "") as any}
+                                variant="compact"
+                                style={{ transform: "scale(0.30)", transformOrigin: "center", opacity: 0.01 }}
                             ></elevenlabs-convai>
                         </div>
                     )}
@@ -235,13 +266,7 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
                         )}
                     </button>
                 </div>
-                <div className="min-w-[120px] text-xs text-white/90" aria-live="polite">{status}</div>
-                {/* Adjacent ElevenLabs widget to enable quick activation; lightly visible by default */}
-                <div className="ml-4 opacity-40 hover:opacity-80 transition">
-                    <div className="w-[56px]">
-                        <elevenlabs-convai agent-id={(process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || '') as any} variant="compact"></elevenlabs-convai>
-                    </div>
-                </div>
+                <div className="min-w-[160px] text-xs text-white/90" aria-live="polite">{status}</div>
             </div>
             {isProcessing && (
                 <div className="mt-2 text-center text-[11px] text-white/70">Uploading and processing audio...</div>
