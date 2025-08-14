@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple API Test</title>
+</head>
+<body>
+    <h1>Simple API Test</h1>
+    <button onclick="testAPI()">Test API</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                console.log('Starting fetch to /api/chat');
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: 'test from simple page' })
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Object.fromEntries(response.headers));
+                
+                const contentType = response.headers.get('content-type');
+                console.log('Content-Type:', contentType);
+                
+                if (contentType && contentType.includes('json')) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `<h3>JSON Response:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else if (contentType && contentType.startsWith('audio/')) {
+                    const blob = await response.blob();
+                    resultDiv.innerHTML = `<h3>Audio Response!</h3><p>Size: ${blob.size} bytes</p><p>Type: ${blob.type}</p>`;
+                    
+                    // Try to play the audio
+                    const url = URL.createObjectURL(blob);
+                    const audio = new Audio(url);
+                    audio.play().catch(e => console.error('Audio play error:', e));
+                } else {
+                    const text = await response.text();
+                    resultDiv.innerHTML = `<h3>Text Response:</h3><pre>${text}</pre>`;
+                }
+                
+            } catch (error) {
+                console.error('Fetch error:', error);
+                resultDiv.innerHTML = `<h3>Error:</h3><p style="color: red;">${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ConvAI Widget Test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background:#0b1220; color:#e6f0ff; padding:24px }
+    .card { max-width:720px; margin:24px auto; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15); border-radius:12px; padding:16px }
+    code { background:rgba(0,0,0,.3); padding:2px 6px; border-radius:6px }
+    .log { white-space:pre-wrap; font-family:ui-monospace, monospace; font-size:12px; opacity:.9 }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>ConvAI Widget Test</h1>
+    <p>This page embeds the ElevenLabs ConvAI widget directly to verify your agent renders.</p>
+    <p>Agent: <code id="agent"></code></p>
+    <div id="widget" style="margin:16px 0"></div>
+    <details>
+      <summary>Logs</summary>
+      <div id="logs" class="log"></div>
+    </details>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const agentId = params.get('agent') || "";
+    document.getElementById('agent').textContent = agentId || '(missing)';
+    function log(msg){ const el=document.getElementById('logs'); el.textContent += msg + "\n"; console.log(msg); }
+
+    (function load() {
+      log('Loading widget script...');
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
+      s.async = true;
+      s.onload = () => {
+        log('Widget script loaded');
+        const container = document.getElementById('widget');
+        if (!agentId) { log('Missing agent id; cannot render widget'); return; }
+        const el = document.createElement('elevenlabs-convai');
+        el.setAttribute('agent-id', agentId);
+        el.setAttribute('variant', 'expanded');
+        container.appendChild(el);
+        log('Widget element appended');
+        setTimeout(()=>{
+          const defined = customElements.get('elevenlabs-convai');
+          log('customElements.get => ' + (defined ? 'defined' : 'undefined'));
+        }, 300);
+      };
+      s.onerror = (e) => log('Widget script failed to load: ' + e.message);
+      document.head.appendChild(s);
+    })();
+  </script>
+</body>
+</html>
+

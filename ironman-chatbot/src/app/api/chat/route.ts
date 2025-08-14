@@ -6,7 +6,16 @@ export async function POST(request: Request) {
 	const targetUrl = process.env.N8N_WEBHOOK_URL || DEFAULT_N8N_URL;
 	const contentType = request.headers.get("content-type") || "";
 
-	// Avoid logging full webhook URL
+	// Check if we're using the default URL (not configured)
+	if (targetUrl === DEFAULT_N8N_URL) {
+		console.warn("⚠️  N8N_WEBHOOK_URL not configured, using placeholder");
+		return NextResponse.json({ 
+			error: "n8n webhook not configured", 
+			message: "Please set N8N_WEBHOOK_URL in your .env.local file" 
+		}, { status: 500 });
+	}
+
+	// Avoid logging full webhook URL for security
 	console.log("API Route - Using configured n8n webhook URL");
 	console.log("API Route - Content Type:", contentType);
 

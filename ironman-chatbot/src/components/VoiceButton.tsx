@@ -1,42 +1,44 @@
 "use client";
 
-import React, { useCallback } from "react";
+import React from "react";
 
 type VoiceButtonProps = {
 	className?: string;
 };
 
+// Replace button with direct ElevenLabs widget embed
 const VoiceButton: React.FC<VoiceButtonProps> = ({ className }) => {
-	const handleMicClick = useCallback(() => {
-		try {
-			const allElements = Array.from(document.querySelectorAll("*") as any);
-			for (const element of allElements) {
-				const shadowRoot = (element as Element & { shadowRoot?: ShadowRoot }).shadowRoot;
-				if (!shadowRoot) continue;
-				const micBtn = shadowRoot.querySelector("button");
-				if (micBtn instanceof HTMLButtonElement) {
-					micBtn.click();
-					return;
-				}
-			}
-		} catch {
-			// ignore
-		}
-	}, []);
+	const raw = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || "";
+
+	const extractAgentId = (value: string): string | null => {
+		if (!value || value === "your_agent_id_here") return null;
+		const htmlMatch = value.match(/agent-id=["']([^"']+)["']/i);
+		if (htmlMatch?.[1]) return htmlMatch[1];
+		const idMatch = value.match(/agent_[a-z0-9]+/i);
+		return idMatch?.[0] || null;
+	};
+
+	const agentId = extractAgentId(raw);
+	
+	if (!agentId) {
+		return (
+			<div className={className}>
+				<div className="rounded-lg bg-yellow-500/20 border border-yellow-500/30 p-4 text-center">
+					<div className="text-yellow-300 text-sm">
+						🎤 Voice Chat Unavailable
+					</div>
+					<div className="text-yellow-200/80 text-xs mt-1">
+						Configure NEXT_PUBLIC_ELEVENLABS_AGENT_ID in .env.local
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
-		<button
-			onClick={handleMicClick}
-			className={
-				className ||
-					"inline-flex items-center gap-2 rounded-full bg-cyan-500/80 hover:bg-cyan-400 text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-300 focus:ring-offset-black/40"
-			}
-			aria-label="Start or stop voice conversation"
-			aria-pressed={false}
-		>
-			<span className="i-mdi-microphone" aria-hidden />
-			<span className="text-sm font-medium">Voice</span>
-		</button>
+		<div className={className}>
+			<elevenlabs-convai agent-id={agentId as any} variant="expanded"></elevenlabs-convai>
+		</div>
 	);
 };
 

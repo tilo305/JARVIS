@@ -1,6 +1,7 @@
 import VideoBackground from "@/components/VideoBackground";
 import ChatUI from "@/components/ChatUI";
 import ConvaiLoader from "@/components/ConvaiLoader";
+import VoiceButton from "@/components/VoiceButton";
 
 export default function Home() {
 	return (
@@ -13,6 +14,10 @@ export default function Home() {
 					<ChatUI />
 				</div>
 			</div>
+            {/* Render the widget at page-level to avoid being clipped by scroll containers */}
+            <div className="pointer-events-auto">
+                <VoiceButton />
+            </div>
 		</div>
 	);
 }

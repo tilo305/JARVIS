@@ -38,21 +38,32 @@ const ChatUI: React.FC = () => {
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ message: trimmed }),
 			});
+			
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({}));
+				const errorMessage = errorData?.message || errorData?.error || `HTTP ${response.status}: ${response.statusText}`;
+				throw new Error(errorMessage);
+			}
+			
 			const data = await response.json().catch(() => ({}));
 			const assistantText =
 				(data?.reply as string) ||
 				(data?.message as string) ||
 				(data?.data?.reply as string) ||
-				JSON.stringify(data ?? { error: "No response" });
+				JSON.stringify(data ?? { error: "No response received" });
 
 			const assistantMsg: Message = { role: "assistant", text: assistantText };
 			setMessages((prev) => [...prev, assistantMsg]);
 			setTimeout(scrollToBottom, 50);
 		} catch (error: unknown) {
 			const errText = error instanceof Error ? error.message : "Unknown error";
+			const errorMessage = errText.includes("n8n webhook not configured") 
+				? "⚠️ Please configure your n8n webhook URL in .env.local to enable chat functionality"
+				: `❌ Error: ${errText}`;
+			
 			setMessages((prev) => [
 				...prev,
-				{ role: "assistant", text: `Error sending message to n8n: ${errText}` },
+				{ role: "assistant", text: errorMessage },
 			]);
 		} finally {
 			setIsSending(false);
@@ -60,7 +71,7 @@ const ChatUI: React.FC = () => {
 	}, [input, isSending, scrollToBottom]);
 
 	const placeholder = useMemo(
-		() => "Type a message to JARVIS (mic voice only)...",
+		() => "Type a message to JARVIS...",
 		[]
 	);
 
@@ -97,7 +108,7 @@ const ChatUI: React.FC = () => {
 			>
 				{messages.length === 0 ? (
 					<div className="flex justify-center py-3">
-						<VoiceButton className="inline-flex items-center gap-1 rounded-md bg-cyan-500/80 hover:bg-cyan-400 text-white px-3 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-300 focus:ring-offset-black/40" />
+						<VoiceButton />
 					</div>
 				) : (
 					messages.map((m, idx) => (

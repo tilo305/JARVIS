@@ -1,0 +1,47 @@
+[
+  {
+    "endpoint": "https://n8n.hempstarai.com/webhook/n8n",
+    "testName": "text",
+    "config": "Text Message Test",
+    "success": false,
+    "error": "Unexpected end of JSON input"
+  },
+  {
+    "endpoint": "https://n8n.hempstarai.com/webhook/n8n",
+    "testName": "audio",
+    "config": "Audio Response Test",
+    "success": false,
+    "error": "Unexpected end of JSON input"
+  },
+  {
+    "endpoint": "https://n8n.hempstarai.com/webhook/n8n",
+    "testName": "complex",
+    "config": "Complex Data Test",
+    "success": false,
+    "error": "Unexpected end of JSON input"
+  },
+  {
+    "endpoint": "https://n8n.hempstarai.com/webhook-test/n8n",
+    "testName": "text",
+    "config": "Text Message Test",
+    "success": false,
+    "error": "{\"code\":404,\"message\":\"The requested webhook \\\"n8n\\\" is not registered.\",\"hint\":\"Click the 'Execute workflow' button on the canvas, then try again. (In test mode, the webhook only works for one call after you click this button)\"}",
+    "responseTime": 57
+  },
+  {
+    "endpoint": "https://n8n.hempstarai.com/webhook-test/n8n",
+    "testName": "audio",
+    "config": "Audio Response Test",
+    "success": false,
+    "error": "{\"code\":404,\"message\":\"The requested webhook \\\"n8n\\\" is not registered.\",\"hint\":\"Click the 'Execute workflow' button on the canvas, then try again. (In test mode, the webhook only works for one call after you click this button)\"}",
+    "responseTime": 57
+  },
+  {
+    "endpoint": "https://n8n.hempstarai.com/webhook-test/n8n",
+    "testName": "complex",
+    "config": "Complex Data Test",
+    "success": false,
+    "error": "{\"code\":404,\"message\":\"The requested webhook \\\"n8n\\\" is not registered.\",\"hint\":\"Click the 'Execute workflow' button on the canvas, then try again. (In test mode, the webhook only works for one call after you click this button)\"}",
+    "responseTime": 61
+  }
+]

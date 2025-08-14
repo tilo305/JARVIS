@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS - Simple Version</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            color: #00d4ff;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+        .chat-container {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            animation: fadeIn 0.3s ease-in;
+        }
+        .user-message {
+            background: rgba(0, 212, 255, 0.3);
+            text-align: right;
+            margin-left: 20%;
+        }
+        .assistant-message {
+            background: rgba(255, 255, 255, 0.1);
+            margin-right: 20%;
+        }
+        .input-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        input {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            font-size: 16px;
+        }
+        input::placeholder { color: rgba(255, 255, 255, 0.6); }
+        button {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .mic-button {
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>JARVIS</h1>
+        <div class="chat-container" id="chatContainer">
+            <div class="message assistant-message">
+                Hello! I'm JARVIS. How can I assist you today?
+            </div>
+        </div>
+        <div class="input-container">
+            <input type="text" id="messageInput" placeholder="Type a message to JARVIS..." />
+            <button onclick="sendMessage()" id="sendButton">Send</button>
+            <button onclick="toggleMic()" id="micButton" class="mic-button">🎤</button>
+        </div>
+        <div class="status" id="status">Ready</div>
+    </div>
+
+    <script>
+        let isRecording = false;
+        let mediaRecorder = null;
+
+        function addMessage(text, isUser = false) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
+            messageDiv.textContent = text;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function setStatus(text) {
+            document.getElementById('status').textContent = text;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            input.value = '';
+            addMessage(message, true);
+            setStatus('Processing...');
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Object.fromEntries(response.headers));
+
+                const contentType = response.headers.get('content-type') || '';
+                console.log('Content-Type:', contentType);
+
+                if (contentType.startsWith('audio/') || contentType.includes('octet-stream')) {
+                    const audioBlob = await response.blob();
+                    const url = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(url);
+                    audio.play();
+                    addMessage('🔊 Playing audio response...', false);
+                    setStatus('Playing audio');
+                } else {
+                    const data = await response.json().catch(() => ({}));
+                    const reply = data?.reply || data?.message || data?.data?.reply || 'No response';
+                    addMessage(reply, false);
+                    setStatus('Ready');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage(`Error: ${error.message}`, false);
+                setStatus('Error occurred');
+            }
+        }
+
+        async function toggleMic() {
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                    const chunks = [];
+
+                    mediaRecorder.ondataavailable = e => e.data && chunks.push(e.data);
+                    mediaRecorder.onstop = async () => {
+                        const blob = new Blob(chunks, { type: 'audio/webm' });
+                        const formData = new FormData();
+                        formData.append('data', blob, 'input.webm');
+
+                        try {
+                            const response = await fetch('/api/chat', {
+                                method: 'POST',
+                                body: formData
+                            });
+
+                            const contentType = response.headers.get('content-type') || '';
+                            if (contentType.startsWith('audio/') || contentType.includes('octet-stream')) {
+                                const audioBlob = await response.blob();
+                                const url = URL.createObjectURL(audioBlob);
+                                const audio = new Audio(url);
+                                audio.play();
+                                addMessage('🔊 Playing audio response...', false);
+                            } else {
+                                const data = await response.json().catch(() => ({}));
+                                const reply = data?.reply || data?.message || 'No response';
+                                addMessage(reply, false);
+                            }
+                        } catch (error) {
+                            addMessage(`Mic error: ${error.message}`, false);
+                        }
+                        stream.getTracks().forEach(track => track.stop());
+                        setStatus('Ready');
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    document.getElementById('micButton').style.background = 'linear-gradient(45deg, #44ff44, #00cc00)';
+                    setStatus('Listening... (click to stop)');
+                    
+                    setTimeout(() => {
+                        if (mediaRecorder.state === 'recording') {
+                            mediaRecorder.stop();
+                        }
+                    }, 6000);
+
+                } catch (error) {
+                    addMessage('Microphone permission denied', false);
+                    setStatus('Mic error');
+                }
+            } else {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+            }
+        }
+
+        // Enter key to send
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
