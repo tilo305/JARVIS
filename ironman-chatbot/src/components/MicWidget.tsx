@@ -40,7 +40,7 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
         } catch {}
     }, [isRecording]);
 
-	const handleToggleRecording = useCallback(async () => {
+    const handleToggleRecording = useCallback(async () => {
 		if (isRecording) {
 			handleStopRecording();
 			return;
@@ -49,9 +49,22 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
 		try {
 			setStatus("Listening...");
 			chunksRef.current = [];
-			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            if (!navigator.mediaDevices?.getUserMedia) {
+                console.error("[MicWidget] mediaDevices.getUserMedia not available");
+                setStatus("Mic unsupported");
+                return;
+            }
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 			mediaStreamRef.current = stream;
-			const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+            const preferred = [
+                "audio/webm;codecs=opus",
+                "audio/webm",
+                "audio/ogg;codecs=opus",
+            ];
+            const supported = preferred.find((t) => (window as any).MediaRecorder?.isTypeSupported?.(t));
+            const mime = supported || undefined;
+            const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+            console.debug("[MicWidget] Using mime:", mime || "default");
 			mediaRecorderRef.current = recorder;
 
 			recorder.ondataavailable = (e) => {
@@ -63,7 +76,7 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
 				cleanupStream();
 				setIsProcessing(true);
 				setStatus("Processing...");
-				try {
+                try {
 					const blob = new Blob(chunksRef.current, { type: "audio/webm" });
 					const form = new FormData();
 					form.append("data", blob, "input.webm");
@@ -71,8 +84,8 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
 						method: "POST",
 						body: form,
 					});
-					const ct = res.headers.get("content-type") || "";
-					if (ct.startsWith("audio/") || ct.includes("octet-stream")) {
+                    const ct = (res.headers.get("content-type") || "").toLowerCase();
+                    if (ct.startsWith("audio/") || ct.includes("octet-stream")) {
 						const audioBlob = await res.blob();
 						const url = URL.createObjectURL(audioBlob);
                         if (playbackRef.current) {
@@ -88,13 +101,14 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
 							setStatus("Ready");
 							URL.revokeObjectURL(url);
 						};
-						audio.play().catch(() => {
+                        audio.play().catch((e) => {
+                            console.error("[MicWidget] audio play failed", e);
 							setIsPlaying(false);
 							setStatus("Ready");
 						});
 					} else {
 						// Fallback to text
-						const dataText = await res.text();
+                        const dataText = await res.text();
 						let text = "";
 						try {
 							const json = JSON.parse(dataText);
@@ -106,9 +120,10 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
 						setStatus("Ready");
 						onAssistantText?.(text);
 					}
-				} catch (err) {
-					setIsProcessing(false);
-					setStatus("Error");
+                } catch (err) {
+                    console.error("[MicWidget] request failed", err);
+                    setIsProcessing(false);
+                    setStatus("Error");
 				}
 			};
 
@@ -118,8 +133,9 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
 			stopTimeoutRef.current = window.setTimeout(() => {
 				if (recorder.state === "recording") recorder.stop();
 			}, 6000);
-		} catch (error) {
-			setStatus("Mic error");
+        } catch (error) {
+            console.error("[MicWidget] getUserMedia failed", error);
+            setStatus("Mic error");
 		}
 	}, [cleanupStream, handleStopRecording, onAssistantText]);
 
