@@ -144,7 +144,7 @@ const ChatUI: React.FC = () => {
 					value={input}
 					onChange={(e) => setInput(e.target.value)}
 					placeholder={isSending ? "Processing..." : placeholder}
-					className="flex-1 rounded-md bg-black/40 border border-white/20 px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-cyan-400"
+					className="flex-1 rounded-md bg-black/40 border border-white/20 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-400"
 					aria-label="Type a message"
 					aria-busy={isSending}
 					autoComplete="off"
