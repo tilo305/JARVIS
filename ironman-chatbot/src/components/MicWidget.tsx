@@ -29,6 +29,21 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
         if (!el) return false;
         let activated = false;
         try {
+            // Prefer any exposed imperative API if available
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const anyEl: any = el as any;
+            if (typeof anyEl.open === "function") { anyEl.open(); activated = true; }
+            if (typeof anyEl.start === "function") { anyEl.start(); activated = true; }
+            if (typeof anyEl.startConversation === "function") { anyEl.startConversation(); activated = true; }
+        } catch {}
+        try {
+            // Try clicking a control inside shadow DOM, if present
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const root: any = (el as any).shadowRoot;
+            const btn = root?.querySelector?.("button, [role='button']");
+            if (btn?.click) { btn.click(); activated = true; }
+        } catch {}
+        try {
             // Sequence of attempts that should count as a user gesture
             el.click?.();
             activated = true;
@@ -213,7 +228,7 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
                     {showActivationOverlay && !!(process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || "") && (
                         <div
                             className="absolute inset-0 z-20 cursor-pointer"
-                            onClick={() => {
+                            onPointerDown={() => {
                                 setHasWidgetActivated(true);
                                 setShowActivationOverlay(false);
                                 // Defer to next tick so the widget processes the user gesture first
