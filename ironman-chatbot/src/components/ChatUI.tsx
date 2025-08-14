@@ -2,6 +2,7 @@
 
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import VoiceButton from "./VoiceButton";
+import MicWidget from "./MicWidget";
 
 type Message = {
 	role: "user" | "assistant" | "system";
@@ -109,8 +110,14 @@ const ChatUI: React.FC = () => {
 				role="log"
 			>
 				{messages.length === 0 ? (
-					<div className="flex justify-center py-3">
+					<div className="flex flex-col items-center gap-3 py-3">
 						<VoiceButton />
+						<MicWidget
+							className="mt-1"
+							onAssistantText={(text) =>
+								setMessages((prev) => [...prev, { role: "assistant", text }])
+							}
+						/>
 					</div>
 				) : (
 					messages.map((m, idx) => (
