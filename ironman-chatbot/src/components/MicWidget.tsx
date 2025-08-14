@@ -22,7 +22,6 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
     const playbackRef = useRef<HTMLAudioElement | null>(null);
     const widgetRef = useRef<HTMLElement | null>(null);
     const [hasWidgetActivated, setHasWidgetActivated] = useState(false);
-    const [showActivationOverlay, setShowActivationOverlay] = useState(false);
 
     const tryActivateElevenLabs = useCallback(() => {
         const el = widgetRef.current;
@@ -94,13 +93,7 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
 			return;
 		}
 
-		try {
-            if (!hasWidgetActivated) {
-                // First-time activation: ask user to click once on the invisible widget overlay
-                setShowActivationOverlay(true);
-                setStatus("Tap to enable voice once…");
-                return;
-            }
+        try {
 			setStatus("Listening...");
 			chunksRef.current = [];
             // Try to activate the ElevenLabs widget behind the mic (if present)
@@ -225,12 +218,11 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
                     )}
 
                     {/* One-time invisible overlay to capture a real user click and forward it to the widget */}
-                    {showActivationOverlay && !!(process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || "") && (
+                    {!hasWidgetActivated && !!(process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || "") && (
                         <div
                             className="absolute inset-0 z-20 cursor-pointer"
                             onPointerDown={() => {
                                 setHasWidgetActivated(true);
-                                setShowActivationOverlay(false);
                                 // Defer to next tick so the widget processes the user gesture first
                                 setTimeout(() => {
                                     tryActivateElevenLabs();
@@ -251,7 +243,18 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
                     )}
                     <button
                         type="button"
-                        onClick={handleToggleRecording}
+                        onClick={(e) => {
+                            // Single click path: activate widget first if needed, then start recording immediately
+                            if (!hasWidgetActivated) {
+                                setHasWidgetActivated(true);
+                                setTimeout(() => {
+                                    tryActivateElevenLabs();
+                                    handleToggleRecording();
+                                }, 0);
+                                return;
+                            }
+                            handleToggleRecording();
+                        }}
                         onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === " ") handleToggleRecording();
                         }}
