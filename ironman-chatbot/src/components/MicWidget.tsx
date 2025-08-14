@@ -191,12 +191,12 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
                 <div className="relative h-16 w-16">
                     {/* Place compact ElevenLabs widget behind the mic button */}
                     {!!(process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || "") && (
-                        <div className="absolute inset-0 z-0 flex items-center justify-center opacity-30 group-hover:opacity-70 transition" aria-hidden>
+                        <div className="absolute inset-0 z-0 flex items-center justify-center transition pointer-events-none" aria-hidden>
                             <elevenlabs-convai
                                 ref={widgetRef as any}
                                 agent-id={(process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || "") as any}
                                 variant="compact"
-                                style={{ transform: "scale(0.30)", transformOrigin: "center" }}
+                                style={{ transform: "scale(0.30)", transformOrigin: "center", opacity: 0.04 }}
                             ></elevenlabs-convai>
                         </div>
                     )}
@@ -213,7 +213,7 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
                         className={`group relative z-10 h-16 w-16 rounded-full transition focus:outline-none focus:ring-2 will-change-transform ${
                             isRecording
                                 ? "bg-gradient-to-b from-red-500 to-red-700 shadow-lg focus:ring-red-300"
-                                : "bg-white/10 backdrop-blur border border-white/30 hover:bg-white/20 focus:ring-cyan-400"
+                                : "bg-black/60 border border-black/50 hover:bg-black/70 focus:ring-cyan-400"
                         } flex items-center justify-center`}
                         aria-label={ariaLabel}
                         aria-pressed={isRecording}
