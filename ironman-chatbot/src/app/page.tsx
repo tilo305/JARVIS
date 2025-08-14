@@ -14,8 +14,8 @@ export default function Home() {
 					<ChatUI />
 				</div>
 			</div>
-            {/* Render the widget at page-level to avoid being clipped by scroll containers */}
-            <div className="pointer-events-auto">
+            {/* Render the widget near mic area with low opacity; we'll duplicate in-chat positioning */}
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 opacity-40 hover:opacity-80 transition pointer-events-auto">
                 <VoiceButton />
             </div>
 		</div>

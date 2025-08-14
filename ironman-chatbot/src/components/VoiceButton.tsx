@@ -35,11 +35,11 @@ const VoiceButton: React.FC<VoiceButtonProps> = ({ className }) => {
 		);
 	}
 
-	return (
-		<div className={className}>
-			<elevenlabs-convai agent-id={agentId as any} variant="expanded"></elevenlabs-convai>
-		</div>
-	);
+    return (
+        <div className={className}>
+            <elevenlabs-convai agent-id={agentId as any} variant="compact"></elevenlabs-convai>
+        </div>
+    );
 };
 
 export default VoiceButton;

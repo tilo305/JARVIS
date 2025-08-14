@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useMemo, useRef, useState } from "react";
-import VoiceButton from "./VoiceButton";
 import MicWidget from "./MicWidget";
 
 type Message = {
@@ -111,9 +110,7 @@ const ChatUI: React.FC = () => {
 				role="log"
 			>
 				{messages.length === 0 ? (
-					<div className="flex justify-center py-3">
-						<VoiceButton />
-					</div>
+					<div className="py-3" />
 				) : (
 					messages
 						.filter((m) => m.text && m.text.trim().length > 0)

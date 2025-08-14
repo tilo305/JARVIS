@@ -192,6 +192,12 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
                     </button>
                 </div>
                 <div className="min-w-[120px] text-xs text-white/90" aria-live="polite">{status}</div>
+                {/* Adjacent ElevenLabs widget to enable quick activation; lightly visible by default */}
+                <div className="ml-4 opacity-40 hover:opacity-80 transition">
+                    <div className="w-[56px]">
+                        <elevenlabs-convai agent-id={(process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || '') as any} variant="compact"></elevenlabs-convai>
+                    </div>
+                </div>
             </div>
             {isProcessing && (
                 <div className="mt-2 text-center text-[11px] text-white/70">Uploading and processing audio...</div>
