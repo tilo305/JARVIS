@@ -75,9 +75,11 @@ const ChatUI: React.FC = () => {
 		[]
 	);
 
+
+
 		const containerClassName = isExpanded
-			? "w-full max-w-2xl rounded-lg bg-white/10 backdrop-blur-md border border-white/20 shadow-xl p-3 sm:p-4 text-white"
-			: "w-full max-w-sm rounded-lg bg-white/10 backdrop-blur-md border border-white/20 shadow-xl p-2 sm:p-3 text-white";
+			? "w-[90vw] max-w-5xl rounded-lg bg-white/10 backdrop-blur-md border border-white/20 shadow-xl p-3 sm:p-4 text-white"
+			: "w-[60vw] max-w-2xl rounded-lg bg-white/10 backdrop-blur-md border border-white/20 shadow-xl p-2 sm:p-3 text-white";
 
 		const listClassName = isExpanded
 			? "max-h-[70vh] overflow-y-auto space-y-3 pr-1"
