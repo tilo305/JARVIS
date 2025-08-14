@@ -80,10 +80,15 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
 					const blob = new Blob(chunksRef.current, { type: "audio/webm" });
 					const form = new FormData();
 					form.append("data", blob, "input.webm");
-					const res = await fetch(INTERNAL_CHAT_API, {
+                    const res = await fetch(INTERNAL_CHAT_API, {
 						method: "POST",
 						body: form,
 					});
+                    if (!res.ok) {
+                        const errText = await res.text().catch(() => "");
+                        console.error("[MicWidget] /api/chat HTTP", res.status, res.statusText, errText);
+                        throw new Error(`HTTP ${res.status}`);
+                    }
                     const ct = (res.headers.get("content-type") || "").toLowerCase();
                     if (ct.startsWith("audio/") || ct.includes("octet-stream")) {
 						const audioBlob = await res.blob();
@@ -118,7 +123,9 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
 						}
 						setIsProcessing(false);
 						setStatus("Ready");
-						onAssistantText?.(text);
+                        if (text && text.trim().length > 0) {
+                            onAssistantText?.(text);
+                        }
 					}
                 } catch (err) {
                     console.error("[MicWidget] request failed", err);

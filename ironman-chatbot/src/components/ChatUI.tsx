@@ -115,7 +115,9 @@ const ChatUI: React.FC = () => {
 						<VoiceButton />
 					</div>
 				) : (
-					messages.map((m, idx) => (
+					messages
+						.filter((m) => m.text && m.text.trim().length > 0)
+						.map((m, idx) => (
 						<div
 							key={idx}
 							className={
@@ -134,7 +136,11 @@ const ChatUI: React.FC = () => {
 			{/* Persistent mic widget below the message list to avoid disappearing or shifting */}
 			<div className="mt-3 flex justify-center">
 				<MicWidget
-					onAssistantText={(text) => setMessages((prev) => [...prev, { role: "assistant", text }])}
+					onAssistantText={(text) => {
+						const trimmed = (text || "").trim();
+						if (!trimmed) return;
+						setMessages((prev) => [...prev, { role: "assistant", text: trimmed }]);
+					}}
 				/>
 			</div>
 
