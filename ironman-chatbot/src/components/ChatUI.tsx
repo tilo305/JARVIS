@@ -82,9 +82,10 @@ const ChatUI: React.FC = () => {
 			? "w-[90vw] max-w-5xl rounded-lg bg-white/10 backdrop-blur-md border border-white/20 shadow-xl p-3 sm:p-4 text-white"
 			: "w-[60vw] max-w-2xl rounded-lg bg-white/10 backdrop-blur-md border border-white/20 shadow-xl p-2 sm:p-3 text-white";
 
+
 		const listClassName = isExpanded
-			? "max-h-[70vh] overflow-y-auto space-y-3 pr-1"
-			: "max-h-[30vh] overflow-y-auto space-y-2 pr-1";
+			? "max-h-[60vh] overflow-y-auto space-y-3 pr-1"
+			: "max-h-[25vh] overflow-y-auto space-y-2 pr-1";
 
 		const handleToggleExpand = useCallback(() => {
 			setIsExpanded((prev) => !prev);
