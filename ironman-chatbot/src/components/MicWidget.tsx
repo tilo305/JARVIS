@@ -20,7 +20,37 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
     const chunksRef = useRef<BlobPart[]>([]);
     const stopTimeoutRef = useRef<number | null>(null);
     const playbackRef = useRef<HTMLAudioElement | null>(null);
-    const widgetRef = useRef<any>(null);
+    const widgetRef = useRef<HTMLElement | null>(null);
+
+    const tryActivateElevenLabs = useCallback(() => {
+        const el = widgetRef.current;
+        if (!el) return false;
+        let activated = false;
+        try {
+            // Sequence of attempts that should count as a user gesture
+            el.click?.();
+            activated = true;
+        } catch {}
+        try {
+            const opts: any = { bubbles: true, cancelable: true, composed: true, pointerId: 1 }; 
+            el.dispatchEvent(new PointerEvent("pointerdown", opts));
+            el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true, composed: true }));
+            el.dispatchEvent(new PointerEvent("pointerup", opts));
+            el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, cancelable: true, composed: true }));
+            el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, composed: true }));
+            activated = true;
+        } catch {}
+        try {
+            el.focus?.();
+            el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+            el.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter", bubbles: true }));
+            activated = true;
+        } catch {}
+        if (!activated) {
+            console.warn("[MicWidget] Could not programmatically activate elevenlabs widget");
+        }
+        return activated;
+    }, []);
 
 	const cleanupStream = useCallback(() => {
 		try {
@@ -51,7 +81,7 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
 			setStatus("Listening...");
 			chunksRef.current = [];
             // Try to activate the ElevenLabs widget behind the mic (if present)
-            try { widgetRef.current?.click?.(); } catch {}
+            tryActivateElevenLabs();
             if (!navigator.mediaDevices?.getUserMedia) {
                 console.error("[MicWidget] mediaDevices.getUserMedia not available");
                 setStatus("Mic unsupported");
@@ -161,12 +191,12 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
                 <div className="relative h-16 w-16">
                     {/* Place compact ElevenLabs widget behind the mic button */}
                     {!!(process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || "") && (
-                        <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none opacity-30 group-hover:opacity-70 transition" aria-hidden>
+                        <div className="absolute inset-0 z-0 flex items-center justify-center opacity-30 group-hover:opacity-70 transition" aria-hidden>
                             <elevenlabs-convai
                                 ref={widgetRef as any}
                                 agent-id={(process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || "") as any}
                                 variant="compact"
-                                style={{ transform: "scale(0.45)", transformOrigin: "center" }}
+                                style={{ transform: "scale(0.30)", transformOrigin: "center" }}
                             ></elevenlabs-convai>
                         </div>
                     )}
