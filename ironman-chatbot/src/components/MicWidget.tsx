@@ -150,7 +150,7 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
             <div className="flex items-center justify-center gap-3">
                 <div className="relative">
                     {isRecording && (
-                        <span className="absolute inset-0 rounded-full animate-ping bg-red-500/40" aria-hidden />
+                        <span className="pointer-events-none absolute inset-0 rounded-full animate-ping bg-red-500/40" aria-hidden />
                     )}
                     <button
                         type="button"
@@ -159,7 +159,7 @@ const MicWidget: React.FC<MicWidgetProps> = ({ className, onAssistantText }) => 
                             if (e.key === "Enter" || e.key === " ") handleToggleRecording();
                         }}
                         disabled={isProcessing}
-                        className={`group h-16 w-16 rounded-full transition focus:outline-none focus:ring-2 ${
+                        className={`group h-16 w-16 rounded-full transition focus:outline-none focus:ring-2 will-change-transform ${
                             isRecording
                                 ? "bg-gradient-to-b from-red-500 to-red-700 shadow-lg focus:ring-red-300"
                                 : "bg-white/10 backdrop-blur border border-white/30 hover:bg-white/20 focus:ring-cyan-400"

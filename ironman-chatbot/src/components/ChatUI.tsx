@@ -111,14 +111,8 @@ const ChatUI: React.FC = () => {
 				role="log"
 			>
 				{messages.length === 0 ? (
-					<div className="flex flex-col items-center gap-3 py-3">
+					<div className="flex justify-center py-3">
 						<VoiceButton />
-						<MicWidget
-							className="mt-1"
-							onAssistantText={(text) =>
-								setMessages((prev) => [...prev, { role: "assistant", text }])
-							}
-						/>
 					</div>
 				) : (
 					messages.map((m, idx) => (
@@ -135,6 +129,13 @@ const ChatUI: React.FC = () => {
 						</div>
 					))
 				)}
+			</div>
+
+			{/* Persistent mic widget below the message list to avoid disappearing or shifting */}
+			<div className="mt-3 flex justify-center">
+				<MicWidget
+					onAssistantText={(text) => setMessages((prev) => [...prev, { role: "assistant", text }])}
+				/>
 			</div>
 
 			<form onSubmit={handleSubmit} className="mt-4 flex items-center gap-2">
