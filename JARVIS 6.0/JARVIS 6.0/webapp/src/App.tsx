@@ -39,26 +39,15 @@ function App() {
 
         {/* Chat Interface - Small, centered at bottom */}
         <div className="flex-shrink-0 pb-2 px-4">
-          <div className="max-w-md mx-auto">
-            {/* Compact Chat Window */}
-            <div className="glass-panel p-3 h-[240px] flex flex-col">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-semibold text-jarvis-blue">
-                  Communication Interface
-                </h2>
-                <button
-                  onClick={clearMessages}
-                  className="text-gray-400 hover:text-jarvis-blue transition-colors text-xs"
-                >
-                  Clear
-                </button>
-              </div>
-              
+          <div className="max-w-2xl mx-auto">
+            {/* Chat Window */}
+            <div className="h-[280px]">
               <ChatInterface
                 messages={messages}
                 onSendMessage={sendTextMessage}
                 onVoiceMessage={sendVoiceMessage}
                 isProcessing={isProcessing}
+                onClearMessages={clearMessages}
               />
             </div>
             

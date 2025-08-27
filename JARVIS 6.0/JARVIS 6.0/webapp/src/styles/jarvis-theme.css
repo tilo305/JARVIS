@@ -81,7 +81,7 @@
   }
 }
 
-/* Glass Morphism Effect */
+/* Enhanced Glass Morphism Effect */
 .glass-panel {
   background: rgba(26, 26, 26, 0.7);
   backdrop-filter: blur(10px);
@@ -89,7 +89,7 @@
   border-radius: 12px;
 }
 
-/* Holographic Text Effect */
+/* Enhanced Holographic Text Effect */
 .holographic-text {
   background: linear-gradient(45deg, #00d4ff, #ffa500, #00d4ff);
   background-size: 200% 200%;
@@ -108,7 +108,7 @@
   }
 }
 
-/* Voice Button Glow */
+/* Enhanced Voice Button Glow */
 .voice-button {
   position: relative;
 }
@@ -140,23 +140,23 @@
   }
 }
 
-/* Message Animations */
+/* Enhanced Message Animations */
 @keyframes message-slide-in {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(20px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 .message-item {
-  animation: message-slide-in 0.3s ease-out;
+  animation: message-slide-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Loading Dots */
+/* Enhanced Loading Dots */
 .loading-dots {
   display: inline-flex;
   gap: 4px;
@@ -168,6 +168,7 @@
   border-radius: 50%;
   background: #00d4ff;
   animation: dot-pulse 1.4s infinite both;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
 }
 
 .loading-dots span:nth-child(2) {
@@ -189,7 +190,7 @@
   }
 }
 
-/* Scrollbar Styling */
+/* Enhanced Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -203,10 +204,92 @@
 ::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #00d4ff, #0088cc);
   border-radius: 4px;
+  border: 1px solid rgba(0, 212, 255, 0.3);
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #00d4ff, #ffa500);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+/* New Holographic Effects */
+.holographic-glow {
+  position: relative;
+}
+
+.holographic-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(45deg, #00d4ff, #ffa500, #00d4ff, #ffa500);
+  border-radius: inherit;
+  z-index: -1;
+  animation: holographic-border 3s linear infinite;
+  opacity: 0.7;
+}
+
+@keyframes holographic-border {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Floating Animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Glitch Effect */
+@keyframes glitch {
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+  100% {
+    transform: translate(0);
+  }
+}
+
+.glitch-effect {
+  animation: glitch 0.3s ease-in-out infinite;
+}
+
+/* Enhanced Shadow Effects */
+.holographic-shadow {
+  box-shadow: 
+    0 0 20px rgba(0, 212, 255, 0.3),
+    0 0 40px rgba(0, 212, 255, 0.2),
+    0 0 60px rgba(0, 212, 255, 0.1);
+}
+
+.gold-shadow {
+  box-shadow: 
+    0 0 20px rgba(255, 165, 0, 0.3),
+    0 0 40px rgba(255, 165, 0, 0.2),
+    0 0 60px rgba(255, 165, 0, 0.1);
 }
 
 /* Responsive Adjustments */
