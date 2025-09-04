@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+    <title>Jarvis AI Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <div class="jarvis-container">
+            <div class="jarvis-header">
+                <h1>JARVIS</h1>
+                <div class="status-indicator" id="status"></div>
+            </div>
+            
+            <div class="chat-container" id="chat-container">
+                <!-- Chat messages will appear here -->
+            </div>
+            
+            <div class="input-container">
+                <input type="text" id="command-input" placeholder="Ask Jarvis anything..." />
+                <button id="voice-button" class="voice-btn">🎤</button>
+                <button id="send-button" class="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="renderer.js"></script>
+</body>
+</html>
